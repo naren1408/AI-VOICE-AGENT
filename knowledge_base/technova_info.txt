@@ -1,0 +1,113 @@
+# TechNova Solutions — Company Knowledge Base
+# NOTE: All data below is FICTIONAL DEMO DATA for demonstration purposes only.
+
+## 1. Company Overview
+TechNova Solutions is a cloud-based business software company founded in 2018 and headquartered in Austin, Texas. We help small and mid-sized businesses streamline operations, manage customer relationships, and unlock data-driven insights through our integrated software suite.
+
+Our mission: "Empowering businesses with intelligent technology that grows with them."
+
+## 2. Products & Services
+
+### A. TechNova CRM Suite
+Our flagship CRM platform helps sales and support teams manage leads, track deals, and close more revenue.
+Key Features:
+- Contact & account management
+- Sales pipeline visualization
+- Email integration (Gmail, Outlook)
+- Automated follow-up sequences
+- Real-time reporting & dashboards
+- Mobile app for iOS and Android
+
+### B. TechNova ERP Pro
+An integrated enterprise resource planning system connecting finance, inventory, HR, and operations.
+Key Features:
+- Financial accounting and invoicing
+- Inventory management with barcode scanning
+- HR & payroll processing
+- Purchase orders and vendor management
+- Multi-location warehouse support
+- Compliance and audit trail
+
+### C. TechNova Analytics Hub
+A business intelligence and reporting platform that transforms raw data into actionable insights.
+Key Features:
+- Drag-and-drop dashboard builder
+- 150+ pre-built report templates
+- Real-time KPI monitoring
+- Predictive sales forecasting (AI-powered)
+- Integrates with CRM, ERP, and third-party data sources
+- Shareable reports with role-based access
+
+## 3. Pricing Plans
+NOTE: All prices below are fictional demo data.
+
+### Starter Plan — $99/month
+- Up to 10 users
+- TechNova CRM Suite (core features)
+- 5 GB cloud storage
+- Email support (48-hour response)
+- Basic reporting
+- Best for: Startups and small teams
+
+### Professional Plan — $299/month
+- Up to 50 users
+- TechNova CRM Suite (all features)
+- TechNova Analytics Hub (standard)
+- 50 GB cloud storage
+- Priority support (8-hour response)
+- Advanced reporting + custom dashboards
+- API access
+- Best for: Growing SMBs
+
+### Enterprise Plan — Custom Pricing (starting ~$799/month)
+- Unlimited users
+- Full suite: CRM + ERP + Analytics Hub
+- 500 GB cloud storage + on-premise option
+- Dedicated account manager
+- 24/7 phone, email, and chat support (1-hour SLA)
+- Custom integrations and data migration
+- SSO, advanced security, and compliance reports
+- Best for: Mid-to-large enterprises
+
+## 4. Free Trial & Onboarding
+- All plans include a 14-day free trial — no credit card required.
+- Free onboarding session (1 hour) for Professional and Enterprise plans.
+- Self-service setup guides and video tutorials available for all plans.
+
+## 5. Industries We Serve
+- Retail & E-commerce
+- Healthcare (HIPAA-compliant options available)
+- Manufacturing & Distribution
+- Financial Services
+- Professional Services (Consulting, Legal, Accounting)
+
+## 6. Technical & Security Details
+- Hosted on AWS (US East, EU West, AP Southeast regions)
+- 99.9% uptime SLA
+- SOC 2 Type II certified
+- Data encrypted at rest (AES-256) and in transit (TLS 1.3)
+- GDPR and CCPA compliant
+- Daily automated backups with 30-day retention
+
+## 7. Support & Contact
+- Support Portal: support.technova.io (fictional)
+- Sales Enquiries: sales@technova.io (fictional)
+- Phone: +1 (800) 123-4567 (fictional)
+- Business Hours: Monday–Friday, 9 AM to 6 PM CST
+
+## 8. Frequently Asked Questions
+
+Q: Can I migrate data from my existing CRM (Salesforce, HubSpot)?
+A: Yes. We offer free data migration assistance for Professional and Enterprise plan customers. Our team handles CSV imports, API-based migrations, and field mapping.
+
+Q: Does TechNova integrate with QuickBooks or Xero?
+A: Yes. TechNova ERP Pro includes native integrations with QuickBooks Online, Xero, and Zoho Books. Additional integrations available via our REST API.
+
+Q: Is there a mobile app?
+A: Yes. TechNova CRM has iOS and Android apps. ERP mobile access is available via browser on all plans.
+
+Q: What happens after my trial ends?
+A: You'll receive a reminder email 3 days before your trial ends. Your data is preserved for 30 days after expiry, giving you time to choose a plan.
+
+Q: Can I add more users mid-subscription?
+A: Yes. Additional user seats can be added at any time and are billed on a pro-rated basis.

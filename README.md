@@ -167,6 +167,36 @@ AI-Sales-Voice-Agent/
 
 ---
 
+## TechNova Solutions: AI Sales Voice Agent (7-Page Dashboard)
+
+A comprehensive enterprise sales agent and CRM dashboard for **TechNova Solutions** (CRM, ERP, and Analytics software).
+
+### Key Features
+- **7-Page Streamlit Dashboard (`technova_app.py`)**:
+  1. 📊 **Dashboard:** Real-time metrics, lead breakdown pie chart, sentiment distribution bar chart, recent leads table, upcoming demos.
+  2. 🤖 **AI Voice Agent:** Interactive chat with live lead card, sentiment trajectory chart, voice input, Edge-TTS audio playback, and call summary generator.
+  3. 👥 **Lead Management:** Filterable, searchable CRM table with manual status override.
+  4. 📅 **Appointments:** Booking form with conflict checks, scheduled appointments list, and status updates.
+  5. 📚 **Knowledge Base:** View knowledge base content, test RAG retrieval, and upload additional documents (.txt, .md).
+  6. 📋 **Call Reports:** Detailed summaries with customer requirements, sentiment tags, and next actions.
+  7. ⚙️ **Settings:** API status, agent configuration, and one-click demo data re-seeding.
+- **FastAPI Backend (`backend/technova_main.py`)**: REST endpoints for `/health`, `/chat`, `/leads`, `/appointments`, `/reports`, `/crm/webhook`.
+- **Zero-Key Demo Mode**: Fully functional with smart keyword matching and TF-IDF RAG retrieval over `knowledge_base/technova_info.txt`. Optionally switch to OpenAI GPT by providing `OPENAI_API_KEY`.
+- **Pre-Seeded Data**: Never opens with empty charts — automatically populates with realistic B2B leads, appointments, and reports on first run.
+
+### Running TechNova Solutions
+
+```bash
+# Terminal 1: Launch TechNova FastAPI Backend (Port 8001)
+python -m uvicorn backend.technova_main:app --port 8001 --reload
+
+# Terminal 2: Launch TechNova Streamlit Dashboard (Port 8503)
+python -m streamlit run technova_app.py --server.port 8503
+```
+Open **http://localhost:8503** in your browser.
+
+---
+
 ## Running Tests
 Run the automated test suite verifying lead qualification, slot conflict handling, sentiment parsing, and RAG retrieval:
 ```bash

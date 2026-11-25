@@ -108,30 +108,46 @@ with tab_call:
 
         # Audio or Text Input
         if not st.session_state.call_ended:
-            st.markdown("##### 🎙️ Voice & Text Inbound")
+            st.markdown("---")
             
-            # Browser Mic Input
+            # --- VOICE INPUT SECTION (shown always, demo mode skips transcription) ---
             audio_data = None
-            if hasattr(st, "audio_input") and not demo_active:
-                audio_data = st.audio_input("Record audio message")
+            if hasattr(st, "audio_input"):
+                with st.container(border=True):
+                    if demo_active:
+                        st.markdown("🎙️ **Voice Input**")
+                        st.caption("⚡ Demo Mode — recording captured but Gemini STT is offline. Your audio plays back below; type your message in the text box.")
+                    else:
+                        st.markdown("🎙️ **Voice Input** — click the mic to record")
+                    audio_data = st.audio_input("Record your message", key="mic_recorder")
 
-            user_text = st.chat_input("Type your question or request a demo...")
+            # --- TEXT INPUT (always visible) ---
+            st.markdown("**💬 Type your message:**")
+            user_text = st.chat_input("Ask about pricing, features, or request a demo...")
 
             # Handle Audio Input
             if audio_data is not None:
-                st.info("Processing voice input...")
-                temp_audio = f"temp_audio/{st.session_state.call_id}_in.wav"
                 os.makedirs("temp_audio", exist_ok=True)
+                temp_audio = f"temp_audio/{st.session_state.call_id}_in.wav"
                 with open(temp_audio, "wb") as f:
                     f.write(audio_data.read())
-                
-                # Transcribe with Gemini STT
-                from backend.speech_to_text import transcribe_audio_gemini
-                client = None
-                from backend.ai_agent import get_gemini_client
-                transcript, detected_lang = transcribe_audio_gemini(temp_audio, get_gemini_client())
-                user_text = transcript
-                selected_lang = detected_lang
+
+                if demo_active:
+                    # Can't transcribe without key — play back audio and prompt user to type
+                    st.audio(temp_audio, format="audio/wav")
+                    st.info("🎙️ Audio recorded! Gemini STT is offline in Demo Mode. Please type what you said in the text box above.")
+                else:
+                    # Transcribe with Gemini STT
+                    from backend.speech_to_text import transcribe_audio_gemini
+                    from backend.ai_agent import get_gemini_client
+                    with st.spinner("🔄 Transcribing audio..."):
+                        transcript, detected_lang = transcribe_audio_gemini(temp_audio, get_gemini_client())
+                    if transcript and not transcript.startswith("Audio transcription error"):
+                        user_text = transcript
+                        selected_lang = detected_lang
+                        st.success(f"📝 Transcribed: *{transcript}*")
+                    else:
+                        st.warning(f"Could not transcribe audio: {transcript}. Please type your message.")
 
             # Process Turn
             if user_text:
