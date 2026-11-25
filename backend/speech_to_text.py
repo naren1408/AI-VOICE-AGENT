@@ -28,8 +28,13 @@ def transcribe_audio_free(audio_path: str) -> Tuple[str, str]:
             audio_data = recognizer.record(source)
 
         text = recognizer.recognize_google(audio_data)
-        # Detect Hindi if Devanagari script is present
-        lang = "hi" if any("\u0900" <= ch <= "\u097F" for ch in text) else "en"
+        # Detect Telugu or Kannada if native script is present
+        if any("\u0C00" <= ch <= "\u0C7F" for ch in text):
+            lang = "te"
+        elif any("\u0C80" <= ch <= "\u0CFF" for ch in text):
+            lang = "kn"
+        else:
+            lang = "en"
         return text, lang
 
     except Exception as e:
@@ -56,8 +61,8 @@ def transcribe_audio_gemini(audio_path: str, client=None) -> Tuple[str, str]:
             if len(audio_bytes) > 200:
                 prompt = (
                     "Transcribe the spoken words in this audio file accurately. "
-                    "Identify if the language is English ('en') or Hindi ('hi'). "
-                    "Output in the format: [LANG: en|hi] <transcription>"
+                    "Identify if the language is English ('en'), Telugu ('te'), or Kannada ('kn'). "
+                    "Output in the format: [LANG: en|te|kn] <transcription>"
                 )
                 response = client.models.generate_content(
                     model=GEMINI_MODEL_CHAT,
@@ -71,7 +76,7 @@ def transcribe_audio_gemini(audio_path: str, client=None) -> Tuple[str, str]:
                 if text.startswith("[LANG:"):
                     parts = text.split("]", 1)
                     lang_code = parts[0].replace("[LANG:", "").strip().lower()
-                    if lang_code in ["en", "hi"]:
+                    if lang_code in ["en", "te", "kn"]:
                         lang = lang_code
                     text = parts[1].strip() if len(parts) > 1 else text
                 if text:

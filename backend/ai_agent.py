@@ -31,7 +31,7 @@ ELECTROMART_SYSTEM_PROMPT = f"""
 {AGENT_ROLE_DESCRIPTION}
 
 GUIDELINES FOR CONVERSATION:
-1. Greet the customer warmly and politely in English or Hindi (match customer language).
+1. Greet the customer warmly and politely in English, Telugu, or Kannada (match customer language).
 2. Understand what they are looking for (laptops, smartphones, tablets, or accessories).
 3. Ask about their budget and intended use (e.g. programming, gaming, students, office, photography).
 4. Recommend products ONLY from the provided CATALOG RECOMMENDATIONS context. Do not invent products or prices.
@@ -119,9 +119,29 @@ DEMO_REPLIES = {
         "CodeMaster Pro has an Intel i5 13500H with Iris Xe graphics, ideal for software and web development. "
         "DevForge Extreme adds a dedicated NVIDIA RTX 3050 GPU and 1TB SSD, making it superior for Docker, ML, and Android emulators."
     ),
-    "hindi_laptop": (
-        "नमस्ते! कोडिंग और ऑफिस के काम के लिए ZenithBook Air 15 (₹48,999) और CodeMaster Pro 15 (₹64,999) "
-        "सबसे बेहतरीन विकल्प हैं। इनमें 16GB RAM और तेज़ प्रोसेसर मिलता है। क्या आप हमारे शोरूम में लाइव डेमो देखना चाहेंगे?"
+    "telugu_greeting": (
+        "నమస్కారం! ఎలక్ట్రోమార్ట్ ఇండియాకు స్వాగతం. నేను అన్య, మీ AI ఎలక్ట్రానిక్స్ సేల్స్ అసిస్టెంట్. "
+        "మీరు లాప్‌టాప్‌లు, స్మార్ట్‌ఫోన్‌లు, టాబ్లెట్‌లు లేదా యాక్సెసరీస్ కోసం చూస్తున్నారా?"
+    ),
+    "telugu_laptop": (
+        "నమస్కారం! కోడింగ్ మరియు ఆఫీస్ పనుల కోసం ZenithBook Air 15 (₹48,999) మరియు CodeMaster Pro 15 (₹64,999) "
+        "అత్యుత్తమ ఎంపికలు. వీటిలో 16GB RAM మరియు శక్తివంతమైన ప్రాసెసర్ లభిస్తాయి. మీరు మా షోరూమ్‌లో ప్రత్యక్ష డెమో చూడాలనుకుంటున్నారా?"
+    ),
+    "telugu_phone": (
+        "నమస్కారం! గేమింగ్ మరియు కెమెరా కోసం Pulse Velocity 5G (₹16,999) మరియు Zenith CamPro 5G (₹34,999) "
+        "అద్భుతమైన స్మార్ట్‌ఫోన్‌లు. మీరు హైదరాబాద్ లేదా బెంగళూరు షోరూమ్ విజిట్ బుక్ చేయాలనుకుంటున్నారా?"
+    ),
+    "kannada_greeting": (
+        "ನಮಸ್ಕಾರ! ಎಲೆಕ್ಟ್ರೋಮಾರ್ಟ್ ಇಂಡಿಯಾಗೆ ಸುಸ್ವಾಗತ. ನಾನು ಅನ್ಯಾ, ನಿಮ್ಮ AI ಎಲೆಕ್ಟ್ರಾನಿಕ್ಸ್ ಮಾರಾಟ ಸಲಹೆಗಾರ್ತಿ. "
+        "ನೀವು ಲ್ಯಾಪ್‌ಟಾಪ್, ಸ್ಮಾರ್ಟ್‌ಫೋನ್, ಟ್ಯಾಬ್ಲೆಟ್ ಅಥವಾ ಆಕ್ಸೆಸರೀಸ್‌ಗಳಿಗಾಗಿ ಹುಡುಕುತ್ತಿದ್ದೀರಾ?"
+    ),
+    "kannada_laptop": (
+        "ನಮಸ್ಕಾರ! ಕೋಡಿಂಗ್ ಮತ್ತು ಆಫೀಸ್ ಕೆಲಸಕ್ಕಾಗಿ ZenithBook Air 15 (₹48,999) ಮತ್ತು CodeMaster Pro 15 (₹64,999) "
+        "ಉತ್ತಮ ಆಯ್ಕೆಗಳಾಗಿವೆ. ಇವುಗಳಲ್ಲಿ 16GB RAM ಮತ್ತು ವೇಗದ ಪ್ರೊಸೆಸರ್ ಲಭ್ಯವಿದೆ. ನೀವು ನಮ್ಮ ಶೋರೂಂನಲ್ಲಿ ಲೈವ್ ಡೆಮೊ ನೋಡಲು ಬಯಸುವಿರಾ?"
+    ),
+    "kannada_phone": (
+        "ನಮಸ್ಕಾರ! ಗೇಮಿಂಗ್ ಮತ್ತು ದೈನಂದಿನ ಬಳಕೆಗಾಗಿ Pulse Velocity 5G (₹16,999) ಹಾಗೂ Volt PowerMax 5G (₹13,999) "
+        "ಅತ್ಯುತ್ತಮ ಸ್ಮಾರ್ಟ್‌ಫೋನ್‌ಗಳಾಗಿವೆ. ನೀವು ನಮ್ಮ ಬೆಂಗಳೂರು ಶೋರೂಂ ಭೇಟಿ ಬುಕ್ ಮಾಡಲು ಬಯಸುವಿರಾ?"
     )
 }
 
@@ -231,9 +251,21 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
         else:
             return greeting_prefix + f"Welcome to {COMPANY_NAME}! I'm {AGENT_NAME}. Are you looking for laptops, smartphones, tablets, or accessories today?"
 
-    # 1. Hindi Greeting / Query
-    if any(w in t for w in ["नमस्ते", "हिंदी", "लैपटॉप", "दाम", "कीमत", "वारंटी", "सस्ता"]):
-        return DEMO_REPLIES["hindi_laptop"]
+    # 1. Telugu Greeting / Query (Script or transliteration)
+    if any("\u0C00" <= ch <= "\u0C7F" for ch in user_input) or any(w in t for w in ["namaskaram", "namaskaramu", "telugu", "bagundi", "kavali", "chudali", "dharalu", "dharam"]):
+        if any(w in t for w in ["phone", "mobile", "ఫోన్", "స్మార్ట్", "speed"]):
+            return DEMO_REPLIES["telugu_phone"]
+        elif any(w in t for w in ["laptop", "coding", "computer", "లాప్", "కంప్యూటర్"]):
+            return DEMO_REPLIES["telugu_laptop"]
+        return DEMO_REPLIES["telugu_greeting"]
+
+    # 1.1 Kannada Greeting / Query (Script or transliteration)
+    if any("\u0C80" <= ch <= "\u0CFF" for ch in user_input) or any(w in t for w in ["namaskara", "kannada", "chennagide", "beku", "nodabeku", "bele", "yavudu"]):
+        if any(w in t for w in ["phone", "mobile", "ಫೋನ್", "ಸ್ಮಾರ್ಟ್"]):
+            return DEMO_REPLIES["kannada_phone"]
+        elif any(w in t for w in ["laptop", "coding", "computer", "ಲ್ಯಾಪ್", "ಕಂಪ್ಯೂಟರ್"]):
+            return DEMO_REPLIES["kannada_laptop"]
+        return DEMO_REPLIES["kannada_greeting"]
 
     # 2. English Greeting (whole words only to prevent 'hi' matching 'sketching')
     if re.search(r"\b(hello|hi|hey|good morning|good afternoon|greetings)\b", t):
@@ -337,6 +369,15 @@ def execute_sales_turn(
 
     try:
         start_t = time.time()
+        lower_input = user_input.lower()
+
+        # Language Detection (English, Telugu, Kannada)
+        if any("\u0C00" <= ch <= "\u0C7F" for ch in user_input) or any(w in lower_input for w in ["namaskaram", "namaskaramu", "telugu", "bagundi", "kavali", "chudali"]):
+            language = "te"
+        elif any("\u0C80" <= ch <= "\u0CFF" for ch in user_input) or any(w in lower_input for w in ["namaskara", "kannada", "chennagide", "beku", "nodabeku"]):
+            language = "kn"
+        else:
+            language = language or "en"
 
         # 1. RAG Context Retrieval
         rag_sources = rag_engine.retrieve(user_input, top_k=3)

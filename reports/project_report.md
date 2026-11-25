@@ -9,7 +9,7 @@ In the multi-brand electronics retail sector, brick-and-mortar and omnichannel r
 2. **Inconsistent Consultation Quality:** Floor staff often push high-margin inventory rather than matching products to customers' precise technical needs and budget constraints.
 3. **Omnichannel Booking Gaps:** Lack of seamless bridge between online digital inquiries and physical showroom demo appointments.
 
-**ElectroMart India** solves these challenges with an autonomous AI sales voice advisor (`Anya`) that engages prospects in natural English and Hindi, grounds consultations strictly in verified product catalog specifications, provides deterministic budget-adherent recommendations, qualifies leads via BANT criteria, and schedules conflict-free showroom visits.
+**ElectroMart India** solves these challenges with an autonomous AI sales voice advisor (`Anya`) that engages prospects in natural English, Telugu, and Kannada, grounds consultations strictly in verified product catalog specifications, provides deterministic budget-adherent recommendations, qualifies leads via BANT criteria, and schedules conflict-free showroom visits.
 
 ---
 

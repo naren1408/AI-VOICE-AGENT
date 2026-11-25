@@ -46,7 +46,7 @@ An autonomous, multilingual B2B/B2C Electronics Retail Sales Voice Agent built f
 
 | Feature | Category | Implementation Details |
 | :--- | :--- | :--- |
-| **Multilingual Voice & Text Chat** | **Working** | Streamlit chat UI + Edge-TTS neural speech in Indian English (`en-IN-NeerjaNeural`) and Hindi (`hi-IN-SwaraNeural`). |
+| **Multilingual Voice & Text Chat** | **Working** | Streamlit chat UI + Edge-TTS neural speech in Indian English (`en-IN-NeerjaNeural`), Telugu (`te-IN-ShrutiNeural`), and Kannada (`kn-IN-SapnaNeural`). |
 | **STT Voice Transcription** | **Working** (Gemini) / **Demo Mode** | Uses `gemini-2.5-flash` via `google-genai` SDK; graceful offline text input fallback in Demo Mode. |
 | **Catalog Recommendation Engine**| **Working** | Budget & spec filtering over `data/products.csv`. Does not hallucinate non-existent products. |
 | **Company RAG Retrieval** | **Working** | Cosine similarity over 8 `knowledge_base/*.txt` documents using TF-IDF and NumPy. |
@@ -156,7 +156,7 @@ AI-Sales-Voice-Agent/
 ├── .env.example
 ├── .gitignore
 ├── .streamlit/config.toml      # Polished light theme styling
-├── demo_script.md              # Exact English and Hindi scenario transcripts
+├── demo_script.md              # Exact English, Telugu, and Kannada scenario transcripts
 ├── README.md                   # Complete documentation
 │
 ├── backend/

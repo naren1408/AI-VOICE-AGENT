@@ -24,11 +24,12 @@ GEMINI_MODEL_EMBEDDING = "text-embedding-004"
 MAX_HISTORY_TURNS = 10
 
 # --- TTS NEURAL VOICE MAPPING ---
-# Natural Edge-TTS Microsoft Neural voices
+# Natural Edge-TTS Microsoft Neural voices for supported languages: English, Telugu, Kannada
 TTS_VOICES = {
-    "en": "en-IN-NeerjaNeural",     # Indian English natural voice
+    "en": "en-IN-NeerjaNeural",     # Indian English natural female voice
     "en-US": "en-US-JennyNeural",   # US English
-    "hi": "hi-IN-SwaraNeural",      # Hindi natural voice
+    "te": "te-IN-ShrutiNeural",     # Telugu natural female voice
+    "kn": "kn-IN-SapnaNeural",      # Kannada natural female voice
     "default": "en-IN-NeerjaNeural"
 }
 

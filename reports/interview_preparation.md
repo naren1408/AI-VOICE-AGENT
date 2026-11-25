@@ -16,7 +16,7 @@ This guide enables you to explain every file and function in under 60 seconds an
 | `backend/lead_qualification.py` | **BANT Lead Scoring:** Extracts requirement, budget, timeline, contact, and intent using regex. Calculates 0–100 score based on 5 weighted criteria and classifies into HOT, WARM, or COLD. | `LEAD_SCORING_WEIGHTS`, `extract_lead_from_conversation(...)` |
 | `backend/sentiment.py` | **Word-Boundary Sentiment Engine:** Evaluates customer sentiment (-1.0 to 1.0). Uses regex word boundaries (`\b`) to eliminate false-negative triggers from sub-words. Detects human supervisor escalation flags. | `analyze_sentiment(...)`, `should_escalate(...)` |
 | `backend/appointment.py` | **Appointment Engine:** Validates showroom operating hours (10 AM to 8:30 PM), prevents duplicate customer bookings using database queries, and formats RFC 5545 `.ics` calendar content. | `book_appointment_in_db(...)`, `validate_appointment_slot(...)` |
-| `backend/speech_to_text.py` | **Speech-to-Text Module:** Interacts with Google Gemini API via `google-genai` SDK to transcribe inbound audio and detect spoken language (English/Hindi). | `transcribe_audio_gemini(...)` |
+| `backend/speech_to_text.py` | **Speech-to-Text Module:** Interacts with Google Gemini API via `google-genai` SDK to transcribe inbound audio and detect spoken language (English/Telugu/Kannada). | `transcribe_audio_gemini(...)` |
 | `backend/text_to_speech.py` | **Text-to-Speech Module:** Generates spoken audio using Microsoft Edge Neural voices (`en-IN-NeerjaNeural`, `hi-IN-SwaraNeural`). Generates unique file paths to eliminate Windows file-locking conflicts. | `text_to_speech(...)`, `_synthesize_async(...)` |
 | `backend/summarizer.py` | **Call Summarizer:** Aggregates customer requirements, category, budget, objections, lead score, and generates structured executive summary records in SQLite. | `generate_call_summary(...)` |
 | `backend/ai_agent.py` | **Agent Orchestrator:** Connects RAG, product recommendation, Gemini LLM (or rule-based Demo Mode), lead qualification, and database persistence into an end-to-end sales turn. | `execute_sales_turn(...)`, `DEMO_REPLIES` |
@@ -37,7 +37,7 @@ This guide enables you to explain every file and function in under 60 seconds an
 **Answer:** We implemented a TF-IDF vectorizer with bi-grams coupled with NumPy cosine similarity in `backend/rag.py`. It chunks all 8 knowledge base documents at application startup, builds a sparse vector space, and computes cosine similarity in sub-5 milliseconds without downloading gigabytes of model weights.
 
 ### 4. What was the false-negative sentiment bug and how did you resolve it?
-**Answer:** Earlier sentiment implementations checked substrings (`any(kw in word)`). Because the negative keyword list contained `"no"`, polite customer queries mentioning `"technova"`, `"innovative"`, or `"know"` triggered false negative sentiment and erroneously displayed the supervisor escalation alert. I resolved this by applying regex word boundaries (`\bkw\b`) and checking for stand-alone words only.
+**Answer:** Earlier sentiment implementations checked substrings (`any(kw in word)`). Because the negative keyword list contained `"no"`, polite customer queries mentioning `"electronics"`, `"innovative"`, or `"know"` triggered false negative sentiment and erroneously displayed the supervisor escalation alert. I resolved this by applying regex word boundaries (`\bkw\b`) and checking for stand-alone words only.
 
 ### 5. Why did you use Pydantic for lead qualification?
 **Answer:** Pydantic provides runtime type validation, constraints (e.g. `score: int = Field(ge=0, le=100)`), and seamless serialization to dictionaries and JSON for database storage and REST API responses.
@@ -60,8 +60,8 @@ Leads scoring 70–100 are HOT, 40–69 WARM, and 0–39 COLD.
 ### 9. How do you generate calendar files?
 **Answer:** In `generate_ics_content(...)`, we construct an RFC 5545-compliant text string containing VCALENDAR and VEVENT blocks with UTC timestamps and unique UUIDs. Streamlit provides an instant download button for the generated `.ics` file.
 
-### 10. How do you support multilingual interaction (English and Hindi)?
-**Answer:** Gemini STT identifies language tags (`[LANG: en|hi]`), the AI agent prompt instructs the model to respond in the user's language, and `backend/text_to_speech.py` routes Hindi text to `hi-IN-SwaraNeural` and English to `en-IN-NeerjaNeural`.
+### 10. How do you support multilingual interaction (English, Telugu, and Kannada)?
+**Answer:** Gemini STT and SpeechRecognition identify language tags (`[LANG: en|te|kn]` / native Unicode script ranges `\u0C00-\u0C7F` for Telugu and `\u0C80-\u0CFF` for Kannada), the AI agent prompt instructs the model to respond in the user's language, and `backend/text_to_speech.py` routes Telugu text to `te-IN-ShrutiNeural`, Kannada to `kn-IN-SapnaNeural`, and English to `en-IN-NeerjaNeural`.
 
 ### 11. How do you prevent Windows file-locking errors with Edge-TTS?
 **Answer:** In Windows, if an audio file is being played by the browser, writing to the same static path causes `[WinError 32] PermissionError`. We generate unique file paths per turn using `uuid.uuid4().hex[:8]`.

@@ -474,14 +474,14 @@ conversations = [
     {
         "conversation_id": "CONV-009",
         "customer_id": "CUST-002",
-        "category": "Hindi Consultation",
+        "category": "Telugu Consultation",
         "turns": [
-            {"speaker": "customer", "text": "मुझे 50,000 के अंदर कोडिंग के लिए एक अच्छा लैपटॉप चाहिए।"},
-            {"speaker": "agent", "text": "नमस्ते! 50,000 के बजट में ZenithBook Air 15 (₹48,999) सबसे बढ़िया विकल्प है। इसमें AMD Ryzen 5 प्रोसेसर और 16GB RAM है जो कोडिंग के लिए बहुत उपयुक्त है।"},
-            {"speaker": "customer", "text": "क्या इस पर वारंटी मिलेगी?"},
-            {"speaker": "agent", "text": "हाँ, इस पर 1 साल की आधिकारिक वारंटी और 7 दिन की रिप्लेसमेंट पॉलिसी उपलब्ध है।"}
+            {"speaker": "customer", "text": "నాకు 50,000 లోపు కోడింగ్ కోసం ఒక మంచి లాప్‌టాప్ కావాలి."},
+            {"speaker": "agent", "text": "నమస్కారం! ₹50,000 బడ్జెట్‌లో ZenithBook Air 15 (₹48,999) అత్యుత్తమ ఎంపిక. ఇందులో AMD Ryzen 5 ప్రాసెసర్ మరియు 16GB RAM ఉన్నాయి."},
+            {"speaker": "customer", "text": "దీనికి వారంటీ ఉంటుందా?"},
+            {"speaker": "agent", "text": "అవును, దీనిపై 1 సంవత్సరం అధికారిక బ్రాండ్ వారంటీ మరియు 7 రోజుల రీప్లేస్‌మెంట్ గ్యారెంటీ లభిస్తుంది."}
         ],
-        "outcome": "Hindi Consultation Completed",
+        "outcome": "Telugu Consultation Completed",
         "recommended_product": "ZenithBook Air 15",
         "lead_score": 85,
         "lead_status": "HOT"
@@ -489,9 +489,18 @@ conversations = [
     {
         "conversation_id": "CONV-010",
         "customer_id": "CUST-007",
-        "category": "Laptops",
+        "category": "Kannada Consultation",
         "turns": [
-            {"speaker": "customer", "text": "Compare CodeMaster Pro 15 and DevForge Extreme 16 please."},
+            {"speaker": "customer", "text": "ನನಗೆ 20,000 ಒಳಗೆ ಉತ್ತಮ ಗೇಮಿಂಗ್ ಫೋನ್ ಬೇಕು."},
+            {"speaker": "agent", "text": "ನಮಸ್ಕಾರ! ₹20,000 ಬಜೆಟ್‌ನಲ್ಲಿ Pulse Velocity 5G (₹16,999) ಅತ್ಯುತ್ತಮ ಸ್ಮಾರ್ಟ್‌ಫೋನ್. ಇದರಲ್ಲಿ Snapdragon 695 5G ಮತ್ತು 120Hz ಸ್ಮೂತ್ ಡಿಸ್ಪ್ಲೇ ಇದೆ."},
+            {"speaker": "customer", "text": "ಬೆಂಗಳೂರು ಶೋರೂಂನಲ್ಲಿ ಇದು ಲಭ್ಯವಿದೆಯೇ?"},
+            {"speaker": "agent", "text": "ಹೌದು, ನಮ್ಮ ಬೆಂಗಳೂರು ಅನುಭವ ಕೇಂದ್ರದಲ್ಲಿ ಸ್ಟಾಕ್ ಲಭ್ಯವಿದೆ. ನಾನು ನಿಮಗಾಗಿ ಡೆಮೊ ಸ್ಲಾಟ್ ಬುಕ್ ಮಾಡಲೇ?"}
+        ],
+        "outcome": "Kannada Consultation Completed",
+        "recommended_product": "Pulse Velocity 5G",
+        "lead_score": 90,
+        "lead_status": "HOT"
+    }
             {"speaker": "agent", "text": "Certainly! CodeMaster Pro 15 (₹64,999) has Intel i5 13500H with Iris Xe graphics, ideal for standard software dev. DevForge Extreme 16 (₹79,999) adds an RTX 3050 GPU, Ryzen 7, and 1TB SSD, making it better for machine learning, Docker, and Android emulators."},
             {"speaker": "customer", "text": "DevForge looks worth the extra ₹15,000. Let me book a callback."}
         ],

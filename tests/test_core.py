@@ -115,7 +115,7 @@ def test_sentiment_analysis_accuracy():
     assert score_n < 0.0
     assert should_escalate(score_n) is True
 
-    # Neutral (critical test: 'technova', 'know', or 'laptop' must NOT trigger negative 'no')
+    # Neutral (critical test: 'innovative', 'know', or 'laptop' must NOT trigger negative 'no')
     label_neu, score_neu = analyze_sentiment("Hello, I want to know about your laptop models.")
     assert label_neu == "neutral"
     assert score_neu == 0.0
@@ -281,4 +281,14 @@ def test_conversational_edge_cases():
     assert "CyberPulse" not in r5["reply"]
     assert r5["lead"]["interested_category"] == "Smartphones"
     assert all(rec["price_inr"] <= 20000 for rec in r5["recommendations"])
+
+    # 6. Telugu Conversation
+    r6 = execute_sales_turn("TEST-TE", "నమస్కారం, నాకు కోడింగ్ కోసం లాప్‌టాప్ కావాలి")
+    assert "నమస్కారం" in r6["reply"]
+    assert r6["language"] == "te"
+
+    # 7. Kannada Conversation
+    r7 = execute_sales_turn("TEST-KN", "ನಮಸ್ಕಾರ, ನನಗೆ ಗೇಮಿಂಗ್ ಫೋನ್ ಬೇಕು")
+    assert "ನಮಸ್ಕಾರ" in r7["reply"]
+    assert r7["language"] == "kn"
 

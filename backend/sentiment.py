@@ -9,13 +9,21 @@ from typing import Tuple
 POSITIVE_KEYWORDS = [
     "great", "excellent", "love", "awesome", "perfect", "good", "helpful",
     "interested", "impressive", "thanks", "thank you", "yes", "definitely",
-    "nice", "superb", "brilliant", "wonderful", "badiya", "shandar", "sahi", "achha"
+    "nice", "superb", "brilliant", "wonderful",
+    # Telugu positive words
+    "baagundi", "manchidi", "dhanyavadalu", "avunu", "baga",
+    # Kannada positive words
+    "chennagide", "dhanyavada", "houdu", "olleyadu", "uttam"
 ]
 
 NEGATIVE_KEYWORDS = [
     "terrible", "awful", "bad", "expensive", "useless", "hate", "slow", "annoyed",
     "frustrated", "scam", "waste", "poor", "never", "cancel", "horrible",
-    "overpriced", "bekar", "kharab", "mehnga", "nahi"
+    "overpriced",
+    # Telugu negative words
+    "baledu", "vaddu", "ekkuva", "kharidu", "dhandaga", "ledu",
+    # Kannada negative words
+    "chennagilla", "beda", "kharabu", "tumba jasti", "illa"
 ]
 
 ESCALATION_THRESHOLD = -0.55
@@ -29,7 +37,7 @@ def analyze_sentiment(text: str) -> Tuple[str, float]:
     """
     t_lower = text.lower()
 
-    # Use regex word boundaries (\b) so 'no' inside 'technova' or 'innovative' is never triggered
+    # Use regex word boundaries (\b) so 'no' inside 'electronics' or 'innovative' is never triggered
     pos_count = sum(1 for kw in POSITIVE_KEYWORDS if re.search(r"\b" + re.escape(kw) + r"\b", t_lower))
     neg_count = sum(1 for kw in NEGATIVE_KEYWORDS if re.search(r"\b" + re.escape(kw) + r"\b", t_lower))
 

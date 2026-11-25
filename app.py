@@ -243,10 +243,10 @@ with tab1:
                         history=st.session_state.messages[:-1]
                     )
 
-                # Generate TTS voice audio
+                # Generate TTS voice audio in detected language (en, te, kn)
                 audio_reply = None
                 try:
-                    audio_reply = text_to_speech(turn_res["reply"])
+                    audio_reply = text_to_speech(turn_res["reply"], language=turn_res.get("language", "en"))
                 except Exception:
                     pass
 
