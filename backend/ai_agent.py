@@ -1,9 +1,10 @@
 """
 ElectroMart India — AI Sales Voice Agent Orchestrator
 Coordinates RAG context retrieval, catalog product recommendations, Gemini LLM reasoning
-(with rule-based Demo Mode fallback), BANT lead scoring, sentiment tracking, and booking.
+(with comprehensive rule-based Demo Mode fallback), BANT lead scoring, sentiment tracking, and booking.
 """
 import os
+import re
 import time
 from typing import List, Dict, Optional, Tuple
 from dotenv import load_dotenv
@@ -32,8 +33,8 @@ GUIDELINES FOR CONVERSATION:
 3. Ask about their budget and intended use (e.g. programming, gaming, students, office, photography).
 4. Recommend products ONLY from the provided CATALOG RECOMMENDATIONS context. Do not invent products or prices.
 5. Explain clearly why each recommended product suits their needs.
-6. Answer questions about pricing, warranty, and return policies using the KNOWLEDGE BASE context.
-7. Offer to arrange a store visit or consultation demo.
+6. Answer questions about pricing, warranty, delivery, GST, and return policies using the KNOWLEDGE BASE context.
+7. Offer to arrange a showroom visit or consultation demo.
 8. Keep answers concise, consultative, and professional (under 3-4 sentences per turn).
 """
 
@@ -42,7 +43,7 @@ DEMO_REPLIES = {
     "greeting": f"Hello! Welcome to {COMPANY_NAME}. I'm {AGENT_NAME}, your AI electronics sales advisor. Are you looking for laptops, smartphones, tablets, or accessories today?",
     "programming_laptop": (
         "Based on your requirements for programming and multitasking, I recommend three great options:\n"
-        "1. **CodeMaster Pro 15** (₹64,999) — 13th Gen Intel Core i5, 16GB DDR5 RAM, and a crisp 2K display.\n"
+        "1. **CodeMaster Pro 15** (₹64,999) — 13th Gen Intel Core i5 H-series, 16GB DDR5 RAM, 2K display.\n"
         "2. **ZenithBook Air 15** (₹48,999) — AMD Ryzen 5, 16GB RAM, budget-friendly for daily coding.\n"
         "3. **DevForge Extreme 16** (₹79,999) — AMD Ryzen 7 with dedicated RTX 3050 GPU for heavy Docker & ML."
     ),
@@ -64,17 +65,56 @@ DEMO_REPLIES = {
         "For photography and short video reels, I recommend the **Zenith CamPro 5G** (₹34,999). "
         "It comes equipped with triple 50MP Sony sensors with Optical Image Stabilization (OIS) and 67W fast charging."
     ),
+    "battery_phone": (
+        "If battery life is your priority, the **Volt PowerMax 5G** (₹13,999) is unmatched. "
+        "It comes with a monster 6000mAh battery that delivers up to 2.5 days of continuous usage on a single charge."
+    ),
+    "flagship_phone": (
+        "Our flagship recommendation is the **Aura Flagship X** (₹64,999) with Snapdragon 8 Gen 3, "
+        "titanium alloy body, IP68 water resistance, and 100x zoom periscope telephoto camera."
+    ),
+    "tablets": (
+        "We have three fantastic tablets: **TabStudy 10.1** (₹14,999) for students and e-learning, "
+        "**NovaPad Air 11** (₹24,999) with 120Hz display, and the **Zenith Pad Creator 12** (₹38,999) "
+        "which includes an active magnetic pressure stylus for digital sketching."
+    ),
+    "accessories": (
+        "Our popular workspace accessories include the **MechKeys RGB Wireless Keyboard** (₹3,999), "
+        "**PrecisionGlide Ergonomic Mouse** (₹1,999), **VoltCharge 100W GaN Charger** (₹3,499), "
+        "and **Aura SoundBeats ANC Headphones** (₹4,999)."
+    ),
     "store_visit": (
         "Certainly! We'd be delighted to host you for a hands-on demo at our showroom. "
         "What date and time would be convenient for your visit?"
     ),
+    "store_hours": (
+        "ElectroMart showrooms are open Monday through Sunday from 10:00 AM to 08:30 PM. "
+        "We have flagship experience centres in Mumbai, Bengaluru, New Delhi, Hyderabad, Pune, Ahmedabad, Kolkata, and Chennai."
+    ),
     "warranty_policy": (
-        "All our electronics include official brand warranty (1 to 3 years depending on the model). "
-        "We also offer a 7-day hassle-free doorstep replacement guarantee for any transit or manufacturing defect."
+        "All our electronics include an official brand warranty ranging from 1 to 3 years. "
+        "We also offer a 7-day doorstep replacement guarantee for any transit or manufacturing defect, plus optional Extended Care."
+    ),
+    "delivery_policy": (
+        "We provide express 24 to 48-hour delivery across metro cities with free open-box inspection for orders above ₹20,000. "
+        "Standard delivery for other locations takes 3 to 5 business days with live GPS tracking."
+    ),
+    "payment_emi": (
+        "We accept UPI, Credit/Debit cards, Net Banking, and Cash on Delivery up to ₹15,000. "
+        "We also offer 0% No-Cost EMI for 3, 6, 9, and 12 months with leading banks on orders above ₹20,000."
+    ),
+    "gst_invoice": (
+        "Yes! We provide full GST business tax invoices for input tax credit. "
+        "Simply share your company name and 15-digit GSTIN during consultation or checkout."
     ),
     "offers": (
         "We have great offers running right now! Including 0% No-Cost EMI for up to 12 months, "
-        "up to ₹5,000 extra exchange bonus on trading old devices, and ₹2,500 off on laptops with a valid student ID."
+        "up to ₹5,000 extra exchange bonus on trading old devices, and a flat ₹2,500 Student Tech Pass discount with student ID."
+    ),
+    "comparison": (
+        "Comparing CodeMaster Pro 15 (₹64,999) and DevForge Extreme 16 (₹79,999): "
+        "CodeMaster Pro has an Intel i5 13500H with Iris Xe graphics, ideal for software and web development. "
+        "DevForge Extreme adds a dedicated NVIDIA RTX 3050 GPU and 1TB SSD, making it superior for Docker, ML, and Android emulators."
     ),
     "hindi_laptop": (
         "नमस्ते! कोडिंग और ऑफिस के काम के लिए ZenithBook Air 15 (₹48,999) और CodeMaster Pro 15 (₹64,999) "
@@ -101,49 +141,96 @@ def is_demo_mode() -> bool:
     return get_gemini_client() is None
 
 
+def _clean_rag_chunk_for_speech(chunk: str) -> str:
+    """Clean RAG chunk formatting for clean conversational reply."""
+    clean = re.sub(r"\[.*?\.txt\]", "", chunk)
+    clean = re.sub(r"#{1,6}\s*", "", clean)
+    clean = clean.replace("**", "").replace("- ", "").strip()
+    # Return first 2 concise sentences
+    sentences = [s.strip() for s in clean.split(".") if s.strip()]
+    if sentences:
+        return ". ".join(sentences[:2]) + "."
+    return clean[:200]
+
+
 def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str:
     """Generate realistic rule-based reply matching ElectroMart scenarios."""
     t = user_input.lower()
 
-    if any(w in t for w in ["नमस्ते", "हिंदी", "लैपटॉप", "दाम", "कीमत", "वारंटी"]):
+    # 1. Hindi Greeting / Query
+    if any(w in t for w in ["नमस्ते", "हिंदी", "लैपटॉप", "दाम", "कीमत", "वारंटी", "सस्ता"]):
         return DEMO_REPLIES["hindi_laptop"]
 
-    if any(w in t for w in ["hello", "hi", "hey", "good morning", "good afternoon"]):
-        return DEMO_REPLIES["greeting"]
+    # 2. English Greeting (whole words only to prevent 'hi' matching 'sketching')
+    if re.search(r"\b(hello|hi|hey|good morning|good afternoon|greetings)\b", t):
+        if not any(kw in t for kw in ["tablet", "laptop", "phone", "price", "budget", "recommend", "under", "need", "looking", "sketching"]):
+            return DEMO_REPLIES["greeting"]
 
-    if "which one is best" in t or "which is best" in t or "which should i buy" in t:
+    # 3. Direct Recommendation Questions
+    if "which one is best" in t or "which is best" in t or "which should i buy" in t or "which do you recommend" in t:
         return DEMO_REPLIES["which_is_best"]
 
-    if any(w in t for w in ["program", "code", "coding", "developer", "70,000", "70000", "70k"]):
+    if any(w in t for w in ["compare", "difference between", "versus", "vs"]):
+        return DEMO_REPLIES["comparison"]
+
+    if any(w in t for w in ["program", "code", "coding", "developer", "software", "python", "70,000", "70000", "70k"]):
         return DEMO_REPLIES["programming_laptop"]
 
-    if any(w in t for w in ["student", "college", "school", "35k", "35,000"]):
+    if any(w in t for w in ["student", "college", "school", "study", "35k", "35,000"]):
         return DEMO_REPLIES["student_laptop"]
 
-    if any(w in t for w in ["gaming", "game", "rtx", "cyberpulse", "1 lakh", "100000"]):
+    if any(w in t for w in ["gaming", "game", "rtx", "cyberpulse", "1 lakh", "100000", "fps"]):
         return DEMO_REPLIES["gaming_laptop"]
 
-    if any(w in t for w in ["camera", "photo", "vlog", "reel", "campro"]):
+    # 4. Product Categories
+    if any(w in t for w in ["tablet", "tab", "ipad", "zenith pad", "stylus"]):
+        return DEMO_REPLIES["tablets"]
+
+    if any(w in t for w in ["keyboard", "mouse", "headphone", "charger", "accessories", "accessory", "earbuds"]):
+        return DEMO_REPLIES["accessories"]
+
+    if any(w in t for w in ["battery phone", "battery life", "powermax", "6000mah"]):
+        return DEMO_REPLIES["battery_phone"]
+
+    if any(w in t for w in ["camera", "photo", "vlog", "reel", "campro", "photography"]):
         return DEMO_REPLIES["camera_phone"]
 
-    if any(w in t for w in ["visit", "store", "showroom", "tomorrow", "come"]):
-        return DEMO_REPLIES["store_visit"]
+    if any(w in t for w in ["flagship", "expensive phone", "titan fold", "foldable", "best phone", "premium phone"]):
+        return DEMO_REPLIES["flagship_phone"]
 
-    if any(w in t for w in ["warranty", "return", "replace", "guarantee"]):
+    # 5. Policies & Showroom Info
+    if any(w in t for w in ["store", "showroom", "location", "address", "timings", "open", "timing", "hours"]):
+        if any(w in t for w in ["visit", "book", "come", "tomorrow"]):
+            return DEMO_REPLIES["store_visit"]
+        return DEMO_REPLIES["store_hours"]
+
+    if any(w in t for w in ["warranty", "return", "replace", "guarantee", "repair", "service center"]):
         return DEMO_REPLIES["warranty_policy"]
 
-    if any(w in t for w in ["offer", "discount", "emi", "cashback", "exchange"]):
+    if any(w in t for w in ["delivery", "shipping", "courier", "open box", "open-box", "timeline"]):
+        return DEMO_REPLIES["delivery_policy"]
+
+    if any(w in t for w in ["payment", "emi", "no cost emi", "no-cost", "card", "upi", "cod", "cash on delivery"]):
+        return DEMO_REPLIES["payment_emi"]
+
+    if any(w in t for w in ["gst", "invoice", "tax", "b2b", "gstin"]):
+        return DEMO_REPLIES["gst_invoice"]
+
+    if any(w in t for w in ["offer", "discount", "exchange", "cashback", "student tech pass"]):
         return DEMO_REPLIES["offers"]
 
-    # If recommendation engine found products, present them
+    # 6. Recommendation Engine matches
     if recs:
-        return f"Based on your requirements, here are our top catalog recommendations:\n\n{format_recommendations_for_agent(recs)}\n\nWould you like to book a store demo to test these hands-on?"
+        return f"Based on your requirements, here are our top catalog recommendations:\n\n{format_recommendations_for_agent(recs)}\n\nWould you like to book a showroom demo to test these in person?"
 
-    # Context fallback
+    # 7. RAG Context Extraction (Smart clean summary)
     if context and len(context) > 40:
-        return f"According to our ElectroMart catalog: {context[:280]}... Would you like more details on this model?"
+        first_chunk = context.split("---")[0] if "---" in context else context
+        cleaned = _clean_rag_chunk_for_speech(first_chunk)
+        if len(cleaned) > 20:
+            return f"{cleaned} Would you like more details on this or shall I help you book a showroom consultation?"
 
-    return f"I can certainly help you with that! Are you looking for a laptop, smartphone, tablet, or accessories, and what budget do you have in mind?"
+    return f"I can certainly help you with that! Are you looking for a laptop, smartphone, tablet, or accessories, and what budget or use case do you have in mind?"
 
 
 def execute_sales_turn(
@@ -155,7 +242,7 @@ def execute_sales_turn(
     """
     Execute one full conversational sales turn.
     Returns:
-      {reply, mode, language, sentiment, lead, sources, recommendations, booking, ics_content}
+      {reply, mode, language, sentiment, lead, sources, recommendations, booking, ics_content, latency_ms}
     """
     db = SessionLocal()
     history = history or []
@@ -220,8 +307,7 @@ CONVERSATION HISTORY:
         ics_data = None
         lower_input = user_input.lower()
         if any(w in lower_input for w in ["book", "confirm", "visit", "pm", "am", "tomorrow", "appointment", "slot"]):
-            # If user mentions time or says yes/tomorrow
-            if any(w in lower_input for w in ["4pm", "pm", "am", "tomorrow", "today", "slot", "4:00"]):
+            if any(w in lower_input for w in ["4pm", "pm", "am", "tomorrow", "today", "slot", "4:00", "visit"]):
                 target_date, target_time_str = parse_natural_datetime(user_input)
                 cust_email = extracted_lead.email or "customer@example.com"
                 cust_name = extracted_lead.name or "Valued Customer"
@@ -252,7 +338,6 @@ CONVERSATION HISTORY:
                     agent_reply += f" [System: Store demo confirmed for {target_date.strftime('%d %B')} at {target_time_str}. Calendar invite ready.]"
 
         # 7. Persist to Database
-        # Upsert Lead
         lead = db.query(Lead).filter(Lead.call_id == call_id).first()
         if not lead:
             lead = Lead(
