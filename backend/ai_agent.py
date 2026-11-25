@@ -157,6 +157,35 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
     """Generate realistic rule-based reply matching ElectroMart scenarios."""
     t = user_input.lower()
 
+    # 0. Personal introduction, name greetings & categories inquiry
+    is_asking_intro = any(w in t for w in ["introduce yourself", "who are you", "what is your name", "tell me about yourself", "what are you"])
+    is_asking_categories = any(w in t for w in ["categories", "category", "what do you sell", "what products", "what do you offer", "what items"])
+
+    user_name = None
+    m_name = re.search(r"(?:my name is|i am|this is|i'm|call me)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", user_input, re.IGNORECASE)
+    if m_name:
+        user_name = m_name.group(1).title()
+
+    if is_asking_intro or is_asking_categories or (user_name and not any(kw in t for kw in ["laptop", "phone", "tablet", "price", "70k", "70000", "35k", "visit", "tomorrow"])):
+        greeting_prefix = f"Hello {user_name}! Pleasure to meet you. " if user_name else "Hello! "
+        intro_part = f"I am {AGENT_NAME}, your AI electronics sales advisor at {COMPANY_NAME}. "
+        categories_part = (
+            "We offer four primary electronics categories:\n"
+            "1. 💻 **Laptops** — from student models (₹24,999) to developer, business ultrabooks, and RTX 4060 gaming.\n"
+            "2. 📱 **Smartphones** — budget 5G phones to 50MP Sony OIS camera devices and foldables (₹11,999 to ₹1,24,999).\n"
+            "3. 📲 **Tablets** — for e-learning, digital note-taking with magnetic stylus, and OLED workstations.\n"
+            "4. 🎧 **Workspace Accessories** — mechanical keyboards, ergonomic mice, 100W GaN chargers, and ANC headsets.\n\n"
+            "Which category or product type would you like to explore today?"
+        )
+        if is_asking_intro and is_asking_categories:
+            return greeting_prefix + intro_part + categories_part
+        elif is_asking_categories:
+            return greeting_prefix + categories_part
+        elif is_asking_intro:
+            return greeting_prefix + intro_part + "I can assist you with product recommendations, specification comparisons, active discount offers, and booking showroom visits. What can I help you find today?"
+        else:
+            return greeting_prefix + f"Welcome to {COMPANY_NAME}! I'm {AGENT_NAME}. Are you looking for laptops, smartphones, tablets, or accessories today?"
+
     # 1. Hindi Greeting / Query
     if any(w in t for w in ["नमस्ते", "हिंदी", "लैपटॉप", "दाम", "कीमत", "वारंटी", "सस्ता"]):
         return DEMO_REPLIES["hindi_laptop"]

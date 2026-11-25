@@ -203,8 +203,10 @@ with tab1:
             audio_data = None
             with st.container(border=True):
                 st.markdown("🎙️ **Voice Inbound (Browser Microphone)**")
+                st.caption("💡 Click the mic once to record, speak your question, then click stop. Anya will reply in text and voice.")
+                mic_key = f"em_mic_{st.session_state.get('mic_idx', 0)}"
                 if hasattr(st, "audio_input"):
-                    audio_data = st.audio_input("Speak your question or requirement", key="em_mic")
+                    audio_data = st.audio_input("Record your voice", key=mic_key)
                 else:
                     st.caption("Voice input ready via text chat below.")
 
@@ -217,12 +219,13 @@ with tab1:
                 audio_hash = hash(audio_bytes) if audio_bytes else None
                 if audio_bytes and len(audio_bytes) > 100 and audio_hash != st.session_state.get("last_audio_hash"):
                     st.session_state["last_audio_hash"] = audio_hash
+                    st.session_state["mic_idx"] = st.session_state.get("mic_idx", 0) + 1
                     from backend.speech_to_text import transcribe_audio_gemini
                     from backend.ai_agent import get_gemini_client
                     temp_wav = f"temp_in_{st.session_state.call_id}.wav"
                     with open(temp_wav, "wb") as f:
                         f.write(audio_bytes)
-                    with st.spinner("🔄 Transcribing customer speech..."):
+                    with st.spinner("🔄 Transcribing your voice..."):
                         t_text, _ = transcribe_audio_gemini(temp_wav, get_gemini_client())
                     if t_text and not t_text.startswith("Audio transcription error"):
                         user_text = t_text

@@ -81,11 +81,16 @@ def recommend_products(user_query: str, max_results: int = 3) -> List[Dict]:
 
     # Persona / Use-case keywords
     is_coding = any(w in t for w in ["program", "code", "coding", "developer", "software", "python", "java", "docker", "web dev", "compiler"])
-    is_student = any(w in t for w in ["student", "college", "school", "study", "class", "assignments", "budget"])
+    is_student = any(w in t for w in ["student", "college", "school", "study", "class", "assignments"])
     is_gaming = any(w in t for w in ["game", "gaming", "rtx", "gpu", "fps", "graphics card", "steam"])
     is_photo = any(w in t for w in ["photo", "camera", "reel", "video", "ois", "vlog", "sony sensor"])
-    is_battery = any(w in t for w in ["battery", "backup", "mah", "long lasting", "travel"])
+    is_battery = any(w in t for w in ["battery", "backup", "mah", "long lasting"])
     is_office = any(w in t for w in ["office", "work", "business", "multitask", "excel", "corporate"])
+
+    # If no category, no budget, and no specific use case was asked, do not force generic recommendations
+    has_use_case = is_coding or is_student or is_gaming or is_photo or is_battery or is_office
+    if not category and not budget and not has_use_case:
+        return []
 
     # Score each product
     scores = []
