@@ -275,3 +275,10 @@ def test_conversational_edge_cases():
     assert "25 top-rated electronics" in r4["reply"]
     assert "free trial" not in r4["reply"].lower()
 
+    # 5. Gaming phone under 20000 (must recommend smartphones <= 20000, never a gaming laptop)
+    r5 = execute_sales_turn("TEST-T5", "best gaming phone under 20000")
+    assert "Pulse Velocity" in r5["reply"]
+    assert "CyberPulse" not in r5["reply"]
+    assert r5["lead"]["interested_category"] == "Smartphones"
+    assert all(rec["price_inr"] <= 20000 for rec in r5["recommendations"])
+

@@ -14,7 +14,10 @@ from backend.config import (
     MAX_HISTORY_TURNS, AGENT_ROLE_DESCRIPTION
 )
 from backend.rag import rag_engine
-from backend.product_recommendation import recommend_products, format_recommendations_for_agent
+from backend.product_recommendation import (
+    recommend_products, format_recommendations_for_agent,
+    parse_budget_from_text, detect_category
+)
 from backend.lead_qualification import extract_lead_from_conversation, extract_customer_name, ExtractedLead
 from backend.sentiment import analyze_sentiment, should_escalate
 from backend.appointment import parse_natural_datetime, book_appointment_in_db, generate_ics_content
@@ -237,6 +240,17 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
         if not any(kw in t for kw in ["tablet", "laptop", "phone", "price", "budget", "recommend", "under", "need", "looking", "sketching"]):
             return DEMO_REPLIES["greeting"]
 
+    # 2.5 Dynamic Recommendation Matching when user specified budget or non-laptop category
+    has_budget = parse_budget_from_text(user_input) is not None
+    detected_cat = detect_category(user_input)
+    is_phone_query = any(w in t for w in ["phone", "smartphone", "mobile"])
+    is_tablet_query = any(w in t for w in ["tablet", "tab", "ipad"])
+    is_accessory_query = any(w in t for w in ["keyboard", "mouse", "headphone", "charger", "accessories", "accessory"])
+
+    # If the user asked for a budget or specific category (e.g. "best gaming phone under 20000"), prioritize catalog matches!
+    if recs and (has_budget or is_phone_query or is_tablet_query or is_accessory_query or (detected_cat and detected_cat != "Laptops")):
+        return f"Based on your requirements, here are our top catalog recommendations:\n\n{format_recommendations_for_agent(recs)}\n\nWould you like to book a showroom demo to test these in person?"
+
     # 3. Direct Recommendation Questions
     if "which one is best" in t or "which is best" in t or "which should i buy" in t or "which do you recommend" in t:
         return DEMO_REPLIES["which_is_best"]
@@ -245,13 +259,16 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
         return DEMO_REPLIES["comparison"]
 
     if any(w in t for w in ["program", "code", "coding", "developer", "software", "python", "70,000", "70000", "70k"]):
-        return DEMO_REPLIES["programming_laptop"]
+        if not is_phone_query and not is_tablet_query:
+            return DEMO_REPLIES["programming_laptop"]
 
     if any(w in t for w in ["student", "college", "school", "study", "35k", "35,000"]):
-        return DEMO_REPLIES["student_laptop"]
+        if not is_phone_query and not is_tablet_query:
+            return DEMO_REPLIES["student_laptop"]
 
     if any(w in t for w in ["gaming", "game", "rtx", "cyberpulse", "1 lakh", "100000", "fps"]):
-        return DEMO_REPLIES["gaming_laptop"]
+        if not is_phone_query and not is_tablet_query:
+            return DEMO_REPLIES["gaming_laptop"]
 
     # 4. Product Categories
     if any(w in t for w in ["tablet", "tab", "ipad", "zenith pad", "stylus"]):
