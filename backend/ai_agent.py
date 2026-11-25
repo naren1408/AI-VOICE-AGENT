@@ -170,20 +170,62 @@ def execute_sales_turn(
         # 3. Analyze turn sentiment
         sentiment_label, sentiment_score = analyze_sentiment(user_input)
 
-        # 4. Check if user is booking an appointment in this turn
-        text_for_booking = f"{user_input} {agent_reply}"
+        # 4. Extract Lead qualification
+        combined_text = user_input + " " + " ".join([h.get("content", "") for h in (history or [])])
+        extracted_lead = extract_lead_rule_based(combined_text)
+        lead_score = calculate_lead_score(extracted_lead)
+        lead_status = get_qualification_status(lead_score)
+
+        # Store None instead of empty string so SQLite doesn't treat multiple empty strings as UNIQUE violations
+        email_val = extracted_lead.email.strip().lower() if extracted_lead.email else None
+        phone_val = extracted_lead.phone.strip() if extracted_lead.phone else None
+
+        lead = db.query(Lead).filter(Lead.call_id == call_id).first()
+        if not lead:
+            # If email is known, check if lead exists by email to prevent duplicate leads across calls
+            if email_val:
+                lead = db.query(Lead).filter(Lead.email == email_val).first()
+
+            if not lead:
+                lead = Lead(
+                    call_id=call_id,
+                    name=extracted_lead.name or None,
+                    email=email_val,
+                    phone=phone_val,
+                    company=extracted_lead.company or None,
+                    need=extracted_lead.need or None,
+                    budget=extracted_lead.budget or None,
+                    timeline=extracted_lead.timeline or None,
+                    is_decision_maker=extracted_lead.is_decision_maker,
+                    score=lead_score,
+                    qualification_status=lead_status
+                )
+                db.add(lead)
+                db.flush()  # assign ID
+            else:
+                lead.call_id = call_id
+        
+        # Update existing lead fields
+        if extracted_lead.name: lead.name = extracted_lead.name
+        if email_val: lead.email = email_val
+        if phone_val: lead.phone = phone_val
+        if extracted_lead.company: lead.company = extracted_lead.company
+        if extracted_lead.need: lead.need = extracted_lead.need
+        if extracted_lead.budget: lead.budget = extracted_lead.budget
+        if extracted_lead.timeline: lead.timeline = extracted_lead.timeline
+        if extracted_lead.is_decision_maker: lead.is_decision_maker = True
+        lead.score = max(lead.score, lead_score)
+        lead.qualification_status = get_qualification_status(lead.score)
+
+        # 5. Check if user is booking an appointment in this turn
         booking_result = None
         ics_data = None
 
         if any(w in user_input.lower() for w in ["book", "confirm", "yes", "tomorrow", "pm", "am", "schedule", "slot"]):
-            # Extract email if present
-            lead_data = extract_lead_rule_based(user_input)
-            if lead_data.email or any(w in user_input.lower() for w in ["tomorrow", "4pm", "slot", "yes"]):
+            if lead.email or any(w in user_input.lower() for w in ["tomorrow", "4pm", "slot", "yes"]):
                 target_dt = parse_natural_datetime(user_input)
-                # Check if we have an email from current input or DB lead
-                existing_lead = db.query(Lead).filter(Lead.call_id == call_id).first()
-                cust_email = lead_data.email or (existing_lead.email if existing_lead else "")
-                cust_name = lead_data.name or (existing_lead.name if existing_lead else "Valued Client")
+                cust_email = lead.email or ""
+                cust_name = lead.name or "Valued Client"
 
                 if cust_email:
                     success, b_msg, appt = book_appointment(db, cust_name, cust_email, target_dt, call_id)
@@ -191,41 +233,6 @@ def execute_sales_turn(
                         booking_result = {"status": "success", "message": b_msg, "slot": target_dt.isoformat()}
                         ics_data = generate_ics_content(cust_name, target_dt)
                         agent_reply += f" [System: Confirmed demo for {target_dt.strftime('%b %d at %I:%M %p')}. Confirmation invite created.]"
-
-        # 5. Extract & Upsert Lead qualification
-        combined_text = user_input + " " + " ".join([h.get("content", "") for h in (history or [])])
-        extracted_lead = extract_lead_rule_based(combined_text)
-        lead_score = calculate_lead_score(extracted_lead)
-        lead_status = get_qualification_status(lead_score)
-
-        lead = db.query(Lead).filter(Lead.call_id == call_id).first()
-        if not lead:
-            lead = Lead(
-                call_id=call_id,
-                name=extracted_lead.name,
-                email=extracted_lead.email,
-                phone=extracted_lead.phone,
-                company=extracted_lead.company,
-                need=extracted_lead.need,
-                budget=extracted_lead.budget,
-                timeline=extracted_lead.timeline,
-                is_decision_maker=extracted_lead.is_decision_maker,
-                score=lead_score,
-                qualification_status=lead_status
-            )
-            db.add(lead)
-        else:
-            # Update fields without overwriting non-empty values with empties
-            if extracted_lead.name: lead.name = extracted_lead.name
-            if extracted_lead.email: lead.email = extracted_lead.email
-            if extracted_lead.phone: lead.phone = extracted_lead.phone
-            if extracted_lead.company: lead.company = extracted_lead.company
-            if extracted_lead.need: lead.need = extracted_lead.need
-            if extracted_lead.budget: lead.budget = extracted_lead.budget
-            if extracted_lead.timeline: lead.timeline = extracted_lead.timeline
-            if extracted_lead.is_decision_maker: lead.is_decision_maker = True
-            lead.score = max(lead.score, lead_score)
-            lead.qualification_status = get_qualification_status(lead.score)
 
         # 6. Save messages to SQLite
         call_obj = db.query(Call).filter(Call.id == call_id).first()
