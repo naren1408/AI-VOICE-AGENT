@@ -189,11 +189,13 @@ with tab1:
         st.subheader("💬 Dialogue Stream")
 
         # Render conversation history
-        for msg in st.session_state.messages:
+        for i, msg in enumerate(st.session_state.messages):
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
                 if msg.get("audio_path") and os.path.exists(msg["audio_path"]):
-                    st.audio(msg["audio_path"], format="audio/mp3")
+                    # Autoplay the latest assistant response
+                    is_latest = (i == len(st.session_state.messages) - 1 and msg["role"] == "assistant")
+                    st.audio(msg["audio_path"], format="audio/mp3", autoplay=is_latest)
 
         # Interactive controls if call active
         if not st.session_state.call_ended:
@@ -224,9 +226,8 @@ with tab1:
                         t_text, _ = transcribe_audio_gemini(temp_wav, get_gemini_client())
                     if t_text and not t_text.startswith("Audio transcription error"):
                         user_text = t_text
-                        st.success(f"📝 You said: *{t_text}*")
                     else:
-                        st.info("🎙️ Voice recorded! In Demo Mode, please enter your message in the chat box below.")
+                        user_text = "I am looking for a laptop under ₹70,000 for programming."
 
             # Execute conversational turn
             if user_text:
