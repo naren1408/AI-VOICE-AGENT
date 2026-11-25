@@ -282,7 +282,8 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
     # 2.5 Dynamic Recommendation Matching when user specified budget or non-laptop category
     has_budget = parse_budget_from_text(user_input) is not None
     detected_cat = detect_category(user_input)
-    is_phone_query = any(w in t for w in ["phone", "smartphone", "mobile"])
+    clean_t = re.sub(r"\b(phone number|mobile number|my phone|contact number)\b", "", t)
+    is_phone_query = any(w in clean_t for w in ["phone", "smartphone", "mobile"])
     is_tablet_query = any(w in t for w in ["tablet", "tab", "ipad"])
     is_accessory_query = any(w in t for w in ["keyboard", "mouse", "headphone", "charger", "accessories", "accessory"])
 
@@ -441,18 +442,40 @@ CONVERSATION HISTORY:
             agent_reply = _generate_demo_reply(user_input, recs, rag_context)
             mode = "Demo Mode"
 
-        # 6. Appointment Booking Detection — Requires explicit booking intent + explicit time/date
+        # 6. Appointment Booking Detection — Requires explicit booking intent, previous booking prompt, or contact submission + explicit time/date
         booking_result = None
         ics_data = None
         lower_input = user_input.lower()
         
         has_booking_intent = bool(re.search(r"\b(book|booking|schedule|reserve|slot|confirm visit|showroom visit|store visit|take an appointment)\b", lower_input))
-        has_explicit_time = bool(re.search(r"\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|\d{1,2}\s*(?:am|pm)|at\s+\d{1,2}|tomorrow|today|morning|evening|afternoon)\b", lower_input))
+        has_explicit_time = bool(re.search(r"(?:\d{1,2}(?::\d{2})?\s*(?:am|pm|p\.m\.|a\.m\.)|\bat\s+\d{1,2}\b|\btomorrow\b|\btoday\b|\bmorning\b|\bevening\b|\bafternoon\b)", lower_input))
 
-        if has_booking_intent and (has_explicit_time or "book" in lower_input or "slot" in lower_input):
+        # Check if previous agent turn was an appointment booking prompt
+        prev_agent_prompt = False
+        if history:
+            for h in reversed(history):
+                if h.get("role") in ["assistant", "agent"]:
+                    prev_text = h.get("content", "").lower()
+                    prev_agent_prompt = any(w in prev_text for w in ["what date and time", "convenient for your visit", "schedule a hands-on", "book a showroom demo"])
+                    break
+
+        has_contact_submission = bool(extracted_lead.email or extracted_lead.phone or extracted_lead.name) and has_explicit_time
+
+        if (has_booking_intent or prev_agent_prompt or has_contact_submission) and has_explicit_time:
             target_date, target_time_str = parse_natural_datetime(user_input)
             cust_email = extracted_lead.email or "customer@example.com"
             cust_name = extracted_lead.name or "Valued Customer"
+
+            # Derive product discussed from recommendations or conversation history
+            prod_name = "Electronics Consultation"
+            if recs:
+                prod_name = recs[0]["product_name"]
+            elif history:
+                for h in reversed(history):
+                    m_p = re.search(r"\*\*([A-Za-z0-9\s]{3,30})\*\*", h.get("content", ""))
+                    if m_p:
+                        prod_name = m_p.group(1).strip()
+                        break
 
             success, b_msg, appt = book_appointment_in_db(
                 db=db,
@@ -462,7 +485,7 @@ CONVERSATION HISTORY:
                 date_val=target_date,
                 time_str=target_time_str,
                 appointment_type="Store Visit",
-                interested_product=recs[0]["product_name"] if recs else "Electronics Demo",
+                interested_product=prod_name,
                 city=extracted_lead.city or "Mumbai",
                 notes="Booked via AI Voice Agent"
             )
@@ -475,9 +498,15 @@ CONVERSATION HISTORY:
                 }
                 ics_data = generate_ics_content(
                     cust_name, target_date, target_time_str,
-                    product=recs[0]["product_name"] if recs else "Electronics"
+                    product=prod_name
                 )
-                agent_reply += f" [System: Store demo confirmed for {target_date.strftime('%d %B')} at {target_time_str}. Calendar invite ready.]"
+                agent_reply = (
+                    f"Thank you, {cust_name}! Your showroom appointment has been successfully confirmed for "
+                    f"**{target_date.strftime('%d %B %Y')} at {target_time_str}** at our {extracted_lead.city or 'Mumbai'} experience centre for **{prod_name}**. "
+                    f"Your Booking ID is **{appt.appointment_id}**. Your .ICS calendar invite is ready below!"
+                )
+            else:
+                agent_reply = f"Hello {cust_name}! {b_msg}"
 
         # 7. Persist to Database
         lead = db.query(Lead).filter(Lead.call_id == call_id).first()

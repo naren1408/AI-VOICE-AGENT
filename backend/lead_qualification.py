@@ -97,6 +97,15 @@ def extract_lead_from_conversation(text: str) -> ExtractedLead:
     email_match = re.search(r"[\w.\-]+@[\w.\-]+\.\w{2,}", text)
     email = email_match.group(0).lower() if email_match else None
 
+    # Handle spoken emails (e.g. "email is M sign Marine 1408 at the rate of gmail.com")
+    if not email:
+        norm_spoken = re.sub(r"\s+at the rate of\s+|\s+at the rate\s+|\s+at\s+(?=[a-zA-Z0-9.\-]+\.(?:com|in|org|net))", "@", text, flags=re.IGNORECASE)
+        m_em = re.search(r"email\s+(?:is\s+)?([a-zA-Z0-9\s.\-_]+)@([a-zA-Z0-9.\-]+(?:\.(?:com|in|org|net|co|edu)))", norm_spoken, re.IGNORECASE)
+        if m_em:
+            user_part = m_em.group(1).replace(" ", "").lower()
+            domain_part = m_em.group(2).replace(" ", "").lower()
+            email = f"{user_part}@{domain_part}"
+
     phone_match = re.search(r"(\+?91[\-\s]?)?[6-9]\d{9}|(\+?\d[\d\s\-]{8,}\d)", text)
     phone = phone_match.group(0).strip() if phone_match else None
 
@@ -116,13 +125,16 @@ def extract_lead_from_conversation(text: str) -> ExtractedLead:
     user_parts = re.findall(r"(?:USER:|user:)(.*?)(?:AGENT:|assistant:|$)", text, re.DOTALL | re.IGNORECASE)
     eval_text = " ".join(user_parts).lower() if user_parts else t_lower
 
-    if any(w in eval_text for w in ["tablet", "tab", "ipad", "zenith pad", "tabstudy"]):
+    # Exclude "phone number" and "mobile number" from category matching!
+    clean_cat_text = re.sub(r"\b(phone number|mobile number|my phone|contact number|call me on)\b", "", eval_text)
+
+    if any(w in clean_cat_text for w in ["tablet", "tab", "ipad", "zenith pad", "tabstudy"]):
         category = "Tablets"
-    elif any(w in eval_text for w in ["phone", "smartphone", "mobile", "android", "iphone", "campro", "velocity", "powermax"]):
+    elif any(w in clean_cat_text for w in ["phone", "smartphone", "mobile", "android", "iphone", "campro", "velocity", "powermax"]):
         category = "Smartphones"
-    elif any(w in eval_text for w in ["laptop", "notebook", "pc", "macbook", "codemaster", "voltbook", "devforge", "cyberpulse"]):
+    elif any(w in clean_cat_text for w in ["laptop", "notebook", "pc", "macbook", "codemaster", "voltbook", "devforge", "cyberpulse"]):
         category = "Laptops"
-    elif any(w in eval_text for w in ["keyboard", "mouse", "headphone", "headset", "charger", "tws", "earbuds", "accessory"]):
+    elif any(w in clean_cat_text for w in ["keyboard", "mouse", "headphone", "headset", "charger", "tws", "earbuds", "accessory"]):
         category = "Accessories"
 
     # 3. Budget

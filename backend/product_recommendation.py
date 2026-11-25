@@ -51,13 +51,16 @@ def parse_budget_from_text(text: str) -> Optional[int]:
 def detect_category(text: str) -> Optional[str]:
     """Detect product category from query text."""
     t = text.lower()
-    if any(w in t for w in ["laptop", "notebook", "macbook", "computer", "pc", "voltbook", "codemaster", "devforge"]):
+    # Strip contact phrases like "phone number" so they never trigger phone recommendations
+    t_clean = re.sub(r"\b(phone number|mobile number|my phone|contact number)\b", "", t)
+
+    if any(w in t_clean for w in ["laptop", "notebook", "macbook", "computer", "pc", "voltbook", "codemaster", "devforge"]):
         return "Laptops"
-    if any(w in t for w in ["phone", "smartphone", "mobile", "android", "iphone", "5g phone"]):
+    if any(w in t_clean for w in ["phone", "smartphone", "mobile", "android", "iphone", "5g phone"]):
         return "Smartphones"
-    if any(w in t for w in ["tablet", "tab", "ipad", "slate", "stylus pad"]):
+    if any(w in t_clean for w in ["tablet", "tab", "ipad", "slate", "stylus pad"]):
         return "Tablets"
-    if any(w in t for w in ["headphone", "headset", "earbuds", "tws", "charger", "keyboard", "mouse", "accessory", "accessories"]):
+    if any(w in t_clean for w in ["headphone", "headset", "earbuds", "tws", "charger", "keyboard", "mouse", "accessory", "accessories"]):
         return "Accessories"
     return None
 
