@@ -15,7 +15,7 @@ from backend.config import (
 )
 from backend.rag import rag_engine
 from backend.product_recommendation import recommend_products, format_recommendations_for_agent
-from backend.lead_qualification import extract_lead_from_conversation, ExtractedLead
+from backend.lead_qualification import extract_lead_from_conversation, extract_customer_name, ExtractedLead
 from backend.sentiment import analyze_sentiment, should_escalate
 from backend.appointment import parse_natural_datetime, book_appointment_in_db, generate_ics_content
 from database.db import SessionLocal, init_db
@@ -170,8 +170,8 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
         )
 
     # --- 0.1 Catalog Scope & Availability Depth Queries ---
-    # E.g. "there are only three phones available in this or there are more phones are available"
-    if any(w in t for w in ["phone", "smartphone", "mobile"]) and any(w in t for w in ["only three", "only 3", "more phones", "how many", "all phones", "other phones", "more available"]):
+    # E.g. "there are only three phones available in this or there are more phones are available", "where only three smartphones available"
+    if any(w in t for w in ["phone", "smartphone", "mobile"]) and any(w in t for w in ["only three", "only 3", "more phones", "how many", "all phones", "other phones", "more available", "where only", "why only"]):
         return (
             "We have a total of **7 smartphones** in our catalog! In addition to the three shown:\n"
             "• **Volt PowerMax 5G** (₹13,999) — 6000mAh battery champion (up to 2.5 days battery life).\n"
@@ -181,7 +181,7 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
             "You can also browse all 7 smartphones in detail with full specifications under the **'Products, Leads & Appointments'** tab!"
         )
 
-    if any(w in t for w in ["laptop", "laptops", "notebook"]) and any(w in t for w in ["only three", "only 3", "more laptops", "how many", "all laptops", "other laptops", "more available"]):
+    if any(w in t for w in ["laptop", "laptops", "notebook"]) and any(w in t for w in ["only three", "only 3", "more laptops", "how many", "all laptops", "other laptops", "more available", "where only", "why only"]):
         return (
             "We carry **8 laptops** across every budget and use case!\n"
             "• **SlimLite 13** (₹24,999) & **VoltBook Student 14** (₹34,999) for students.\n"
@@ -191,7 +191,7 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
             "You can view and filter all 8 models in the Products tab!"
         )
 
-    if any(w in t for w in ["tablet", "tablets", "tab"]) and any(w in t for w in ["only three", "only 3", "more tablets", "how many", "all tablets", "other tablets", "more available"]):
+    if any(w in t for w in ["tablet", "tablets", "tab"]) and any(w in t for w in ["only three", "only 3", "more tablets", "how many", "all tablets", "other tablets", "more available", "where only", "why only"]):
         return (
             "We have **5 tablets** in our catalog:\n"
             "• **MediaTab 8** (₹9,999) — Compact 8-inch for reading and streaming.\n"
@@ -206,12 +206,7 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
     is_asking_intro = any(w in t for w in ["introduce yourself", "who are you", "what is your name", "tell me about yourself", "what are you", "introduce"])
     is_asking_categories = any(w in t for w in ["categories", "category", "what do you sell", "what products", "what do you offer", "what items", "what is present", "what are present"])
 
-    user_name = None
-    m_name = re.search(r"(?:my name is|this is|i'm|call me|i am)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", user_input, re.IGNORECASE)
-    if m_name:
-        cand = m_name.group(1).title()
-        if cand.lower() not in ["silent", "looking", "interested", "from", "searching", "here", "ready"]:
-            user_name = cand
+    user_name = extract_customer_name(user_input)
 
     if is_asking_intro or is_asking_categories or (user_name and not any(kw in t for kw in ["laptop", "phone", "tablet", "price", "70k", "70000", "35k", "visit", "tomorrow"])):
         greeting_prefix = f"Hello {user_name}! Pleasure to meet you. " if user_name else "Hello! "

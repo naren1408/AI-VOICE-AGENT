@@ -47,6 +47,48 @@ class ExtractedLead(BaseModel):
     score_breakdown: Dict[str, int] = Field(default_factory=dict)
 
 
+STOP_WORDS_FOR_NAME = {
+    "silent", "looking", "interested", "from", "searching", "here", "ready", "calling",
+    "and", "a", "an", "the", "in", "on", "at", "for", "with", "to", "of", "about",
+    "student", "buyer", "customer", "user", "wondering", "thinking", "trying",
+    "planning", "not", "just", "so", "very", "also", "currently", "available", "good",
+    "happy", "fine", "okay", "back", "new", "online", "sure", "delhi", "mumbai"
+}
+
+
+def extract_customer_name(text: str) -> Optional[str]:
+    """
+    Extract a person's name accurately from conversational text.
+    Handles 'my name is Sai Narayan', 'call me Priya', 'this is Rajesh', 'I am Sai'.
+    Guards strictly against common English verbs/adjectives/prepositions (e.g. 'I am looking', 'I am silent and', 'I am from Delhi').
+    """
+    # 1. Explicit name introductions: "my name is [Name]", "myself [Name]", "call me [Name]"
+    m_exp = re.search(r"\b(?:my name is|myself|call me)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)", text, re.IGNORECASE)
+    if m_exp:
+        words = [w for w in m_exp.group(1).split() if w.lower() not in STOP_WORDS_FOR_NAME]
+        if words:
+            return " ".join(words).title()
+
+    # 2. "this is [Name]"
+    m_this = re.search(r"\bthis is\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)", text, re.IGNORECASE)
+    if m_this:
+        words = [w for w in m_this.group(1).split() if w.lower() not in STOP_WORDS_FOR_NAME]
+        if words and words[0].lower() not in ["regarding", "for", "my", "the", "an"]:
+            return " ".join(words).title()
+
+    # 3. "i am [Name]" / "i'm [Name]" — strict validation: stop words in candidate words reject the false match
+    m_iam = re.search(r"\b(?:i am|i'm)\s+([A-Za-z]+)(?:\s+([A-Za-z]+))?", text, re.IGNORECASE)
+    if m_iam:
+        w1 = m_iam.group(1)
+        w2 = m_iam.group(2)
+        if w1 and w1.lower() not in STOP_WORDS_FOR_NAME:
+            if w2 and w2.lower() not in STOP_WORDS_FOR_NAME:
+                return f"{w1.title()} {w2.title()}"
+            return w1.title()
+
+    return None
+
+
 def extract_lead_from_conversation(text: str) -> ExtractedLead:
     """Extract lead attributes from multi-turn dialogue text using robust pattern matching."""
     t_lower = text.lower()
@@ -58,14 +100,8 @@ def extract_lead_from_conversation(text: str) -> ExtractedLead:
     phone_match = re.search(r"(\+?91[\-\s]?)?[6-9]\d{9}|(\+?\d[\d\s\-]{8,}\d)", text)
     phone = phone_match.group(0).strip() if phone_match else None
 
-    # Name: "My name is X", "I am X", "This is X"
-    name = None
-    name_match = re.search(r"(?:my name is|this is|i'm|call me|i am)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", text, re.IGNORECASE)
-    if name_match:
-        cand = name_match.group(1).title()
-        # Filter out common false names
-        if cand.lower() not in ["silent", "looking", "interested", "from", "searching", "here", "ready", "calling"]:
-            name = cand
+    # Name: Strict validated extraction
+    name = extract_customer_name(text)
 
     # City: Check for major metro cities
     city = None
