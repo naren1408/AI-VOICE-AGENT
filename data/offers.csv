@@ -1,0 +1,11 @@
+offer_id,product_category,discount_title,discount_details,validity,conditions
+OFFER-01,Laptops,Student Tech Pass,"Flat ₹2,500 off on all laptops with valid student ID",31-Dec-2026,"Applicable on laptops above ₹30,000. Online & In-store."
+OFFER-02,Laptops,Developer Power Bundle,Free MechKeys Wireless Keyboard with CodeMaster Pro 15,30-Nov-2026,Valid on CodeMaster Pro 15 and DevForge Extreme 16.
+OFFER-03,Smartphones,5G Upgrade Exchange Bonus,"Up to ₹5,000 extra exchange bonus on trading any 4G phone",31-Dec-2026,Old phone must be in working condition with original IMEI.
+OFFER-04,Smartphones,Festive Card Cashback,"Instant 10% cashback up to ₹3,000 on HDFC and ICICI cards",15-Dec-2026,"Minimum transaction value ₹15,000. Valid on credit & debit EMI."
+OFFER-05,Tablets,Stylus Bundle Special,"Get magnetic pressure stylus for ₹999 (regular ₹2,999) with Zenith Pad",31-Dec-2026,Applies to Zenith Pad Creator 12 and NovaPad Air 11.
+OFFER-06,Accessories,Work-From-Home Duo,"Buy Keyboard and Mouse together, save flat ₹1,000",31-Dec-2026,Valid on MechKeys Keyboard + PrecisionGlide Mouse combo.
+OFFER-07,All Categories,No-Cost EMI 12 Months,0% interest EMI for up to 12 months across all leading banks,31-Dec-2026,"Cart value above ₹20,000 on major credit cards."
+OFFER-08,Laptops,Extended Care Protection,2nd Year Warranty extension at 50% discount,31-Dec-2026,Must be added at time of laptop purchase.
+OFFER-09,Accessories,SoundBeats Intro Offer,"Flat ₹1,000 discount on Aura SoundBeats ANC Headset",30-Nov-2026,Promotional coupon code: SOUND1000.
+OFFER-10,Smartphones,Screen Shield Guarantee,1-time free screen replacement for 6 months on Flagship X,31-Dec-2026,Valid on Aura Flagship X and Titan Fold Z.

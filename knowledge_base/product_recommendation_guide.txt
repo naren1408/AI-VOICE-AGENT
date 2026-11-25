@@ -1,0 +1,38 @@
+# ElectroMart India — Product Recommendation Guide
+
+Use these verified guidelines to match customer needs to the best catalog product.
+
+## 1. Laptops for Programming & Software Development
+- Budget ₹60,000 to ₹70,000:
+  **CodeMaster Pro 15 (₹64,999)**
+  - Why: Intel Core i5-13500H (12 cores, 16 threads), 16GB DDR5 RAM, 512GB Gen4 SSD, crisp 2K 100% sRGB display. Perfect for VS Code, Python, Node.js, IntelliJ, and web dev.
+- Budget ₹75,000 to ₹85,000:
+  **DevForge Extreme 16 (₹79,999)**
+  - Why: AMD Ryzen 7 7735HS, 16GB DDR5 (expandable to 64GB), 1TB SSD, and dedicated NVIDIA RTX 3050 6GB GPU. Essential for Docker containers, mobile app emulators, and local machine learning models.
+
+## 2. Laptops for Students & Online Classes
+- Budget under ₹35,000:
+  **VoltBook Student 14 (₹34,999)**
+  - Why: Intel Core i3 12th Gen, 8GB RAM, 256GB SSD, lightweight 1.4kg body, and 8 hours battery. Eligible for Student Tech Pass (₹2,500 extra discount).
+- Budget under ₹25,000:
+  **EcoBook Lite 15 (₹24,999)**
+  - Why: Intel Celeron N4500, 8GB RAM, 128GB+256GB storage. Affordable for basic assignments and Zoom calls.
+
+## 3. Laptops for Gaming & High-End 3D Work
+- Budget under ₹1,00,000:
+  **CyberPulse G15 (₹94,999)**
+  - Why: AMD Ryzen 7 7840HS, 16GB DDR5, 1TB Gen4 SSD, NVIDIA RTX 4060 8GB GDDR6, 165Hz QHD panel. Handles AAA titles at high FPS.
+
+## 4. Smartphones by Use Case
+- Best for Photography & Vlogging (₹30,000–₹40,000):
+  **Zenith CamPro 5G (₹34,999)** — Triple 50MP Sony sensors with OIS, 4K 60fps recording, 67W fast charging.
+- Best for Battery Endurance (Under ₹15,000):
+  **Volt PowerMax 5G (₹13,999)** — 6000mAh monster battery lasting 2.5 days.
+- Best Flagship All-Rounder (Above ₹60,000):
+  **Aura Flagship X (₹64,999)** — Snapdragon 8 Gen 3, titanium body, IP68, 100x periscope zoom.
+
+## 5. Tablets by Use Case
+- Best for Digital Sketching & Note-Taking:
+  **Zenith Pad Creator 12 (₹38,999)** — 144Hz 3K display, included 4096-level magnetic pressure stylus.
+- Best for Students & E-Learning:
+  **TabStudy 10.1 (₹14,999)** — TUV certified eye-comfort screen, 7000mAh battery.

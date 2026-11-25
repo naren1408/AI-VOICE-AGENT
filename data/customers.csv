@@ -1,0 +1,21 @@
+customer_id,name,email,phone,city,customer_type
+CUST-001,Aarav Sharma,aarav.sharma@example.com,+91-98201-11223,Mumbai,Student
+CUST-002,Priya Patel,priya.patel@example.com,+91-98791-22334,Ahmedabad,Software Engineer
+CUST-003,Rohan Iyer,rohan.iyer@example.com,+91-98401-33445,Bengaluru,Startup Founder
+CUST-004,Ananya Sen,ananya.sen@example.com,+91-98311-44556,Kolkata,Graphic Designer
+CUST-005,Vikram Malhotra,vikram.m@example.com,+91-98111-55667,New Delhi,Corporate Manager
+CUST-006,Sneha Reddy,sneha.reddy@example.com,+91-98491-66778,Hyderabad,College Student
+CUST-007,Karan Joshi,karan.j@example.com,+91-98221-77889,Pune,Freelance Developer
+CUST-008,Divya Nair,divya.nair@example.com,+91-98471-88990,Kochi,Content Creator
+CUST-009,Amitabh Verma,amitabh.v@example.com,+91-98391-99001,Lucknow,Business Owner
+CUST-010,Meera Das,meera.das@example.com,+91-98611-10112,Bhubaneswar,Educator
+CUST-011,Siddharth Rao,sid.rao@example.com,+91-98801-21223,Bengaluru,DevOps Engineer
+CUST-012,Pooja Hegde,pooja.h@example.com,+91-98231-32334,Mumbai,Accountant
+CUST-013,Aditya Chauhan,aditya.c@example.com,+91-98141-43445,Chandigarh,Competitive Gamer
+CUST-014,Neha Kulkarni,neha.k@example.com,+91-98241-54556,Pune,HR Professional
+CUST-015,Rajesh Mehta,rajesh.m@example.com,+91-98781-65667,Surat,Retail Merchant
+CUST-016,Tanya Bhatia,tanya.b@example.com,+91-98101-76778,Gurugram,Marketing Specialist
+CUST-017,Naveen Sundaram,naveen.s@example.com,+91-98411-87889,Chennai,Systems Architect
+CUST-018,Kavita Singh,kavita.s@example.com,+91-98521-98990,Patna,Civil Services Aspirant
+CUST-019,Gaurav Agarwal,gaurav.a@example.com,+91-98181-09101,Noida,Financial Analyst
+CUST-020,Deepa Menon,deepa.m@example.com,+91-98461-19202,Thiruvananthapuram,Medical Student

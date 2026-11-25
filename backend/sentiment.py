@@ -1,33 +1,40 @@
+"""
+ElectroMart India — Customer Sentiment Analysis
+Evaluates per-turn customer sentiment score (-1.0 to 1.0) and detects supervisor escalation flags.
+Uses word boundaries to eliminate false-negative triggers.
+"""
 import re
 from typing import Tuple
 
-# Keywords for rule-based sentiment scoring (-1.0 to 1.0)
 POSITIVE_KEYWORDS = [
     "great", "excellent", "love", "awesome", "perfect", "good", "helpful",
     "interested", "impressive", "thanks", "thank you", "yes", "definitely",
-    "badiya", "shandar", "sahi", "achha", "dhanyawad"
+    "nice", "superb", "brilliant", "wonderful", "badiya", "shandar", "sahi", "achha"
 ]
 
 NEGATIVE_KEYWORDS = [
-    "terrible", "bad", "expensive", "useless", "hate", "slow", "annoyed",
-    "frustrated", "scam", "waste", "poor", "never", "cancel",
-    "bekar", "kharab", "mehnga", "nahi"
+    "terrible", "awful", "bad", "expensive", "useless", "hate", "slow", "annoyed",
+    "frustrated", "scam", "waste", "poor", "never", "cancel", "horrible",
+    "overpriced", "bekar", "kharab", "mehnga", "nahi"
 ]
 
-ESCALATION_THRESHOLD = -0.6
+ESCALATION_THRESHOLD = -0.55
 
 
 def analyze_sentiment(text: str) -> Tuple[str, float]:
-    """Analyze sentiment per conversation turn returning (label, score between -1 and 1)."""
-    text_lower = text.lower()
-    score = 0.0
+    """
+    Analyze sentiment of a message turn.
+    Returns (label, score) where label is 'positive', 'neutral', or 'negative'
+    and score is between -1.0 and 1.0.
+    """
+    t_lower = text.lower()
 
-    # Count positive and negative keyword occurrences using word boundaries to avoid false positives
-    pos_count = sum(1 for kw in POSITIVE_KEYWORDS if re.search(r"\b" + re.escape(kw) + r"\b", text_lower))
-    neg_count = sum(1 for kw in NEGATIVE_KEYWORDS if re.search(r"\b" + re.escape(kw) + r"\b", text_lower))
+    # Use regex word boundaries (\b) so 'no' inside 'technova' or 'innovative' is never triggered
+    pos_count = sum(1 for kw in POSITIVE_KEYWORDS if re.search(r"\b" + re.escape(kw) + r"\b", t_lower))
+    neg_count = sum(1 for kw in NEGATIVE_KEYWORDS if re.search(r"\b" + re.escape(kw) + r"\b", t_lower))
 
-    # Check stand-alone negative 'no'
-    if re.search(r"\bno\b", text_lower) and not re.search(r"\bno problem\b|\bno worries\b", text_lower):
+    # Stand-alone negative 'no'
+    if re.search(r"\bno\b", t_lower) and not re.search(r"\bno problem\b|\bno worries\b", t_lower):
         neg_count += 1
 
     if pos_count > neg_count:
@@ -40,6 +47,6 @@ def analyze_sentiment(text: str) -> Tuple[str, float]:
         return "neutral", 0.0
 
 
-def requires_human_escalation(sentiment_score: float) -> bool:
-    """Return True if user exhibits strong negative sentiment."""
+def should_escalate(sentiment_score: float) -> bool:
+    """Return True if customer sentiment is strongly negative, recommending human follow-up."""
     return sentiment_score <= ESCALATION_THRESHOLD

@@ -1,0 +1,16 @@
+customer_id,interested_category,budget,requirement,purchase_timeline,lead_score,lead_status
+CUST-002,Laptops,"₹70,000",Laptop for Python and backend programming with 16GB RAM,Within 7 days,95,HOT
+CUST-003,Laptops,"₹90,000",Ultra-lightweight laptop with long battery life for business pitch meetings,Immediate,90,HOT
+CUST-007,Laptops,"₹80,000",Development laptop for full-stack web and Docker environments,Within 15 days,85,HOT
+CUST-013,Laptops,"₹1,00,000",High refresh rate gaming laptop with RTX 4060 graphics,Within 30 days,80,HOT
+CUST-001,Laptops,"₹35,000",Budget laptop for college assignments and online zoom classes,Next 2 weeks,75,HOT
+CUST-004,Tablets,"₹40,000",Tablet with high-precision stylus support for digital illustration,This month,65,WARM
+CUST-005,Smartphones,"₹65,000",Premium flagship smartphone with excellent telephoto camera and battery,Within 45 days,60,WARM
+CUST-008,Smartphones,"₹35,000",Camera smartphone for social media vlog reels and short video shooting,Next month,55,WARM
+CUST-011,Accessories,"₹5,000",Wireless mechanical keyboard for home office coding desk setup,Exploring options,50,WARM
+CUST-006,Tablets,"₹15,000",Affordable tablet for PDF reading and video lectures,Within 60 days,45,WARM
+CUST-009,Smartphones,"₹20,000",Dual-SIM phone with durable battery for retail shop communication,Within 2 months,40,WARM
+CUST-015,Laptops,Undecided,Looking at laptop prices for accounting software next year,Next year,25,COLD
+CUST-010,Tablets,Undecided,Just researching tablet options for school classroom integration,No fixed timeline,20,COLD
+CUST-012,Accessories,"₹2,000",Browsing ergonomic mouse alternatives,Not decided,20,COLD
+CUST-018,Laptops,"₹25,000",General enquiry about lowest price laptop,Unknown,15,COLD

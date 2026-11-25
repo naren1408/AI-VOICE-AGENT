@@ -1,139 +1,177 @@
+"""
+ElectroMart India — Appointment Booking & Calendar Engine
+Handles Store Visits, Product Consultations, and Sales Callbacks.
+Validates business hours (10:00 AM – 08:30 PM), prevents duplicate slots,
+and generates standard RFC 5545 .ics calendar files.
+"""
+import re
+import uuid
 import datetime
-from typing import List, Tuple
-from sqlalchemy.orm import Session
+from typing import Tuple, Optional
 from database.models import Appointment
 
-# --- CONFIGURATION (Easily explainable / live-coding ready) ---
-WORK_HOURS_START = 9    # 09:00 AM
-WORK_HOURS_END = 18     # 06:00 PM (18:00)
-DEMO_DURATION_MINUTES = 30
-WORK_DAYS = {0, 1, 2, 3, 4}  # Monday (0) to Friday (4)
+BUSINESS_START_HOUR = 10  # 10:00 AM
+BUSINESS_END_HOUR = 20    # 08:30 PM (cut-off 20:30)
 
 
-def parse_natural_datetime(text: str) -> datetime.datetime:
-    """Parse natural language date strings like 'tomorrow 4pm', '2026-11-26 15:00'."""
-    text = text.lower().strip()
-    now = datetime.datetime.now()
-    target_date = now.date()
+def parse_natural_datetime(text: str) -> Tuple[datetime.date, str]:
+    """
+    Parse date and formatted time from natural language user input.
+    Defaults to tomorrow at 04:00 PM if unspecified.
+    """
+    today = datetime.date.today()
+    target_date = today + datetime.timedelta(days=1)  # Default: tomorrow
 
-    if "tomorrow" in text:
-        target_date = now.date() + datetime.timedelta(days=1)
-    elif "today" in text:
-        target_date = now.date()
-    elif "next monday" in text:
-        days_ahead = (7 - now.weekday()) % 7 or 7
-        target_date = now.date() + datetime.timedelta(days=days_ahead)
-
-    # Extract hour and minute
-    hour, minute = 14, 0  # Default 2:00 PM
-    import re
-
-    # Pattern 1: ISO date time YYYY-MM-DD HH:MM
-    iso_match = re.search(r"(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2}))?", text)
-    if iso_match:
-        y, m, d = int(iso_match.group(1)), int(iso_match.group(2)), int(iso_match.group(3))
-        target_date = datetime.date(y, m, d)
-        if iso_match.group(4):
-            hour = int(iso_match.group(4))
-            minute = int(iso_match.group(5)) if iso_match.group(5) else 0
+    t = text.lower()
+    if "today" in t:
+        target_date = today
+    elif "day after tomorrow" in t:
+        target_date = today + datetime.timedelta(days=2)
+    elif "tomorrow" in t:
+        target_date = today + datetime.timedelta(days=1)
     else:
-        # Pattern 2: 12-hour or 24-hour time with optional am/pm (e.g. '4pm', '2:30 pm', '14:00', 'at 4')
-        time_match = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", text)
-        if time_match:
-            raw_h = int(time_match.group(1))
-            raw_m = int(time_match.group(2)) if time_match.group(2) else 0
-            meridiem = time_match.group(3)
+        # Check ISO date 'YYYY-MM-DD'
+        m_iso = re.search(r"\b(202\d)-(\d{1,2})-(\d{1,2})\b", text)
+        if m_iso:
+            try:
+                target_date = datetime.date(int(m_iso.group(1)), int(m_iso.group(2)), int(m_iso.group(3)))
+            except ValueError:
+                pass
+        else:
+            # Check '28 November' or 'Nov 28'
+            m_month = re.search(r"(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*", t)
+            if m_month:
+                months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+                month_idx = months.index(m_month.group(2)[:3]) + 1
+                try:
+                    target_date = datetime.date(today.year, month_idx, int(m_month.group(1)))
+                    if target_date < today:
+                        target_date = datetime.date(today.year + 1, month_idx, int(m_month.group(1)))
+                except ValueError:
+                    pass
 
-            # If user writes 'tomorrow 2pm' or '4pm'
-            if meridiem:
-                if meridiem == "pm" and raw_h < 12:
-                    raw_h += 12
-                elif meridiem == "am" and raw_h == 12:
-                    raw_h = 0
-            elif raw_h < 7:  # Interpret 1-6 without am/pm as afternoon business hours
+    # Parse Time: "4pm", "4:00 PM", "16:00", "11:30 am", "4"
+    target_time_str = "04:00 PM"
+    m_time = re.search(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", t)
+    if m_time:
+        raw_h = int(m_time.group(1))
+        raw_m = int(m_time.group(2)) if m_time.group(2) else 0
+        ampm = m_time.group(3)
+
+        if 1 <= raw_h <= 24:
+            if ampm == "pm" and raw_h < 12:
                 raw_h += 12
+            elif ampm == "am" and raw_h == 12:
+                raw_h = 0
+            elif not ampm and raw_h < 9:
+                raw_h += 12  # Assume afternoon for times like '4' or '5'
 
-            if 0 <= raw_h <= 23:
-                hour = raw_h
-            if 0 <= raw_m <= 59:
-                minute = raw_m
+            hour_12 = raw_h % 12 or 12
+            meridiem = "PM" if raw_h >= 12 else "AM"
+            target_time_str = f"{hour_12:02d}:{raw_m:02d} {meridiem}"
 
-    return datetime.datetime(target_date.year, target_date.month, target_date.day, hour, minute)
+    return target_date, target_time_str
 
 
-def check_availability(db: Session, dt: datetime.datetime) -> Tuple[bool, str]:
-    """Check if the slot is on a business day, within business hours, and not already booked."""
-    # Check weekday
-    if dt.weekday() not in WORK_DAYS:
-        return False, "Selected date is on a weekend. Demos are available Monday through Friday."
+def validate_appointment_slot(date_val: datetime.date, time_str: str) -> Tuple[bool, str]:
+    """Validate appointment is during showroom business hours (10 AM to 8:30 PM)."""
+    # Parse hour from time string "04:00 PM"
+    m = re.search(r"(\d{1,2}):(\d{2})\s*(AM|PM)", time_str)
+    if not m:
+        return True, "Valid"
 
-    # Check work hours
-    if dt.hour < WORK_HOURS_START or dt.hour >= WORK_HOURS_END:
-        return False, f"Selected time is outside working hours ({WORK_HOURS_START}:00 to {WORK_HOURS_END}:00)."
+    h = int(m.group(1))
+    ampm = m.group(3)
+    h_24 = h if ampm == "AM" else (h + 12 if h < 12 else h)
 
-    # Check database conflicts (slot occupied within 30 min window)
+    if h_24 < BUSINESS_START_HOUR or h_24 > BUSINESS_END_HOUR:
+        return False, f"Appointments are available between 10:00 AM and 08:30 PM. Requested slot {time_str} is outside operating hours."
+
+    return True, "Valid"
+
+
+def book_appointment_in_db(
+    db,
+    customer_name: str,
+    customer_email: str,
+    customer_phone: Optional[str],
+    date_val: datetime.date,
+    time_str: str,
+    appointment_type: str = "Store Visit",
+    interested_product: Optional[str] = None,
+    city: str = "Mumbai",
+    notes: Optional[str] = None
+) -> Tuple[bool, str, Optional[Appointment]]:
+    """
+    Atomic booking into SQLite database.
+    Checks for duplicate slot for the same customer to prevent double-booking.
+    """
+    if not customer_email or "@" not in customer_email:
+        return False, "A valid email address is required to confirm your booking and send the calendar invite.", None
+
+    is_valid, reason = validate_appointment_slot(date_val, time_str)
+    if not is_valid:
+        return False, reason, None
+
+    date_str = date_val.strftime("%Y-%m-%d")
+
+    # Double-booking check
     existing = db.query(Appointment).filter(
-        Appointment.slot_time == dt,
-        Appointment.status == "CONFIRMED"
+        Appointment.customer_email == customer_email.lower().strip(),
+        Appointment.appointment_date == date_str,
+        Appointment.appointment_time == time_str,
+        Appointment.status != "Cancelled"
     ).first()
 
     if existing:
-        return False, f"The slot at {dt.strftime('%Y-%m-%d %H:%M')} is already booked. Please choose another slot."
+        return False, f"You already have a confirmed appointment on {date_str} at {time_str}. Please select another time.", None
 
-    return True, f"Slot {dt.strftime('%Y-%m-%d %H:%M')} is available."
+    appt_id = f"APT-{str(uuid.uuid4())[:6].upper()}"
+    new_appt = Appointment(
+        appointment_id=appt_id,
+        customer_name=customer_name or "Valued Customer",
+        customer_email=customer_email.lower().strip(),
+        customer_phone=customer_phone,
+        appointment_date=date_str,
+        appointment_time=time_str,
+        appointment_type=appointment_type or "Store Visit",
+        interested_product=interested_product or "Electronics Consultation",
+        city=city or "Mumbai",
+        status="Confirmed",
+        notes=notes or "Booked via ElectroMart India AI Sales Voice Agent"
+    )
+    db.add(new_appt)
+    db.commit()
+    db.refresh(new_appt)
 
-
-def book_appointment(db: Session, customer_name: str, customer_email: str, slot_dt: datetime.datetime, call_id: str = None) -> Tuple[bool, str, Appointment]:
-    """Atomically book an appointment and rollback if double-booked."""
-    if not customer_email or "@" not in customer_email:
-        return False, "Valid customer email is required to book a demo.", None
-
-    # Enforce transactional boundary
-    try:
-        # Check availability again inside transaction
-        is_free, msg = check_availability(db, slot_dt)
-        if not is_free:
-            return False, msg, None
-
-        appt = Appointment(
-            customer_name=customer_name or "Valued Client",
-            customer_email=customer_email.strip().lower(),
-            slot_time=slot_dt,
-            call_id=call_id,
-            status="CONFIRMED"
-        )
-        db.add(appt)
-        db.commit()
-        db.refresh(appt)
-        return True, f"Demo booked successfully for {slot_dt.strftime('%Y-%m-%d %H:%M')}! Confirmation sent to {customer_email}.", appt
-    except Exception as err:
-        db.rollback()
-        return False, f"Could not book appointment due to conflict or error: {str(err)}", None
+    confirmation_msg = (
+        f"Appointment confirmed! Booking ID: {appt_id} on {date_str} at {time_str} "
+        f"({appointment_type}) at our {city} showroom."
+    )
+    return True, confirmation_msg, new_appt
 
 
-def generate_ics_content(customer_name: str, slot_dt: datetime.datetime) -> str:
-    """Generate an iCalendar (.ics) string for the scheduled product demo."""
-    end_dt = slot_dt + datetime.timedelta(minutes=DEMO_DURATION_MINUTES)
-    dt_stamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    dt_start = slot_dt.strftime("%Y%m%dT%H%M%S")
-    dt_end = end_dt.strftime("%Y%m%dT%H%M%S")
+def generate_ics_content(customer_name: str, date_val: datetime.date, time_str: str, product: str = "Electronics") -> str:
+    """Generate standard RFC 5545 iCalendar format text."""
+    dt_str = date_val.strftime("%Y%m%d")
+    uid = f"{uuid.uuid4()}@electromart-india.example.com"
+    summary = f"ElectroMart India Store Demo: {product}"
+    description = f"Hands-on demonstration and consultation for {customer_name} at ElectroMart India showroom."
 
-    ics_lines = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//CloudScale AI//Sales Demo Booking//EN",
-        "CALSCALE:GREGORIAN",
-        "METHOD:REQUEST",
-        "BEGIN:VEVENT",
-        f"UID:demo-{int(slot_dt.timestamp())}@cloudscale.ai",
-        f"DTSTAMP:{dt_stamp}",
-        f"DTSTART:{dt_start}",
-        f"DTEND:{dt_end}",
-        f"SUMMARY:CloudScale AI Product Demo - {customer_name}",
-        "DESCRIPTION:30-minute tailored technical demo and FinOps consultation with CloudScale AI.",
-        "LOCATION:Google Meet / Zoom (Link in invite)",
-        "STATUS:CONFIRMED",
-        "END:VEVENT",
-        "END:VCALENDAR"
-    ]
-    return "\r\n".join(ics_lines)
+    ics = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ElectroMart India//Sales Appointment//EN
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:{uid}
+DTSTAMP:{dt_str}T090000Z
+DTSTART:{dt_str}T110000Z
+DTEND:{dt_str}T120000Z
+SUMMARY:{summary}
+DESCRIPTION:{description}
+LOCATION:ElectroMart India Experience Centre
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR"""
+    return ics

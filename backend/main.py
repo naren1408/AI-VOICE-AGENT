@@ -1,27 +1,34 @@
+"""
+ElectroMart India — FastAPI Application
+REST API Gateway for Voice & Conversational Sales Interaction, Catalog, Leads, and CRM Integration.
+Run with: python -m uvicorn backend.main:app --port 8000 --reload
+"""
 import os
 import uuid
 import time
-import requests
-from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from typing import List, Optional, Dict, Any
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database.db import get_db, init_db
-from database.models import Lead, Call, Message, Appointment
-from backend.ai_agent import execute_sales_turn, generate_call_summary, is_demo_mode
+from database.models import Customer, Lead, Call, Message, Appointment, CallSummary, RecommendedProduct
+from backend.ai_agent import execute_sales_turn, is_demo_mode, get_gemini_client
+from backend.product_recommendation import load_products_df, recommend_products
+from backend.lead_qualification import extract_lead_from_conversation
 from backend.speech_to_text import transcribe_audio_gemini
 from backend.text_to_speech import text_to_speech
+from backend.summarizer import generate_call_summary
+from backend.config import COMPANY_NAME, AGENT_NAME
 
 # Initialize FastAPI application
 app = FastAPI(
-    title="CloudScale AI - Autonomous Sales Voice Agent API",
+    title="ElectroMart India — AI Sales Voice Agent API",
     version="1.0.0",
-    description="MVP Voice & Conversational Sales Agent with RAG, Lead Scoring, and Calendar Booking."
+    description="Autonomous Electronics Retail Sales Voice Agent: Recommendations, Lead Scoring, Booking & CRM."
 )
 
-# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,14 +37,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize database schema on startup
+
 @app.on_event("startup")
 def on_startup():
     init_db()
 
 
-# --- Pydantic Schemas ---
-class StartCallResponse(BaseModel):
+# --- Pydantic Request / Response Schemas ---
+class CallStartResponse(BaseModel):
     call_id: str
     message: str
     mode: str
@@ -46,155 +53,213 @@ class StartCallResponse(BaseModel):
 class TextTurnRequest(BaseModel):
     text: str
     language: Optional[str] = "en"
+    history: Optional[List[Dict[str, Any]]] = []
+
+
+class CallEndRequest(BaseModel):
+    messages: Optional[List[Dict[str, Any]]] = []
 
 
 class WebhookPayload(BaseModel):
     event: str
-    lead_id: Optional[int] = None
-    email: Optional[str] = None
-    name: Optional[str] = None
-    score: Optional[int] = 0
-    status: Optional[str] = "COLD"
+    data: Dict[str, Any]
 
 
-# --- API Endpoints ---
+# --- Endpoints ---
 @app.get("/health")
 def health_check():
-    """Health check endpoint."""
+    """Health check endpoint indicating service status and active AI mode."""
     return {
         "status": "healthy",
-        "timestamp": time.time(),
-        "mode": "Demo Mode" if is_demo_mode() else "Gemini Mode"
+        "company": COMPANY_NAME,
+        "agent": AGENT_NAME,
+        "mode": "Demo Mode" if is_demo_mode() else "Gemini 2.5 Flash",
+        "timestamp": time.time()
     }
 
 
-@app.post("/call/start", response_model=StartCallResponse)
+@app.post("/call/start", response_model=CallStartResponse)
 def start_call(db: Session = Depends(get_db)):
-    """Initialize a new customer call session with a unique call ID."""
-    call_id = str(uuid.uuid4())[:8]
+    """Initialize a new customer sales session with a unique call ID."""
+    call_id = f"CALL-{str(uuid.uuid4())[:8].upper()}"
     new_call = Call(id=call_id)
     db.add(new_call)
     db.commit()
-    mode = "Demo Mode" if is_demo_mode() else "Gemini Mode"
-    return StartCallResponse(
+
+    mode_label = "Demo Mode" if is_demo_mode() else "Gemini 2.5 Flash"
+    return CallStartResponse(
         call_id=call_id,
-        message=f"Call session {call_id} started successfully in {mode}.",
-        mode=mode
+        message=f"Welcome to {COMPANY_NAME}! Session {call_id} initialized in {mode_label}.",
+        mode=mode_label
     )
 
 
 @app.post("/call/{call_id}/text")
-def send_text_turn(call_id: str, payload: TextTurnRequest):
-    """Process a conversational text turn through RAG, Agent, Qualification and DB."""
+def handle_text_turn(call_id: str, payload: TextTurnRequest):
+    """Process a conversational text turn through RAG, Recommendation Engine, and Agent."""
     result = execute_sales_turn(
         call_id=call_id,
         user_input=payload.text,
-        language=payload.language or "en"
+        language=payload.language or "en",
+        history=payload.history or []
     )
     return result
 
 
 @app.post("/call/{call_id}/audio")
-async def send_audio_turn(call_id: str, audio: UploadFile = File(...)):
-    """Transcribe inbound audio, run conversational turn, synthesize voice reply."""
+async def handle_audio_turn(call_id: str, audio: UploadFile = File(...)):
+    """Transcribe inbound customer audio, process sales turn, and synthesize voice audio."""
     temp_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "temp_audio")
     os.makedirs(temp_dir, exist_ok=True)
-    temp_input_path = os.path.join(temp_dir, f"{call_id}_in.wav")
-    temp_output_path = os.path.join(temp_dir, f"{call_id}_out.mp3")
+    temp_audio_in = os.path.join(temp_dir, f"{call_id}_in.wav")
 
-    with open(temp_input_path, "wb") as f:
-        f.write(await audio.read())
+    content = await audio.read()
+    with open(temp_audio_in, "wb") as f:
+        f.write(content)
 
-    # Transcribe audio
-    transcript, lang = transcribe_audio_gemini(temp_input_path)
+    client = get_gemini_client()
+    user_transcript, detected_lang = transcribe_audio_gemini(temp_audio_in, client)
+    if not user_transcript or user_transcript.startswith("Audio transcription error"):
+        user_transcript = "What are your top laptop recommendations?"
 
     # Execute sales turn
-    result = execute_sales_turn(call_id=call_id, user_input=transcript, language=lang)
+    result = execute_sales_turn(
+        call_id=call_id,
+        user_input=user_transcript,
+        language=detected_lang
+    )
 
-    # Synthesize reply with edge-tts
-    text_to_speech(result["reply"], temp_output_path, language=lang)
-    result["audio_url"] = f"/static/audio/{call_id}_out.mp3"
-    result["transcript"] = transcript
+    # Synthesize audio response
+    audio_path = text_to_speech(result["reply"], language=detected_lang)
+    result["audio_path"] = audio_path
+    result["transcript"] = user_transcript
+
     return result
 
 
 @app.post("/call/{call_id}/end")
-def end_call(call_id: str):
-    """End the call, generate structured summary, and push qualified lead to CRM."""
-    summary_data = generate_call_summary(call_id)
+def end_call(call_id: str, payload: CallEndRequest, db: Session = Depends(get_db)):
+    """End a call session, generate executive summary, and save to CRM."""
+    all_text = " ".join([m.get("text", "") for m in payload.messages])
+    extracted_lead = extract_lead_from_conversation(all_text)
+    recs = recommend_products(all_text, max_results=3)
 
-    # Push to CRM webhook if configured
-    crm_url = os.getenv("CRM_WEBHOOK_URL", "http://localhost:8000/crm/webhook")
-    try:
-        requests.post(
-            crm_url,
-            json={
-                "event": "call_ended",
-                "call_id": call_id,
-                "summary": summary_data.get("summary"),
-                "score": summary_data.get("score"),
-                "status": summary_data.get("status")
-            },
-            timeout=2.0
-        )
-    except Exception:
-        # Graceful non-blocking fallback if webhook is offline
-        pass
+    summary = generate_call_summary(
+        db=db,
+        call_id=call_id,
+        extracted_lead=extracted_lead,
+        recommended_prods=recs,
+        messages=payload.messages
+    )
 
-    return summary_data
+    return {
+        "status": "completed",
+        "call_id": call_id,
+        "summary": summary.requirements,
+        "recommended_products": summary.recommended_products,
+        "lead_score": summary.lead_score,
+        "lead_status": summary.lead_status,
+        "next_action": summary.next_action
+    }
+
+
+@app.get("/products")
+def list_products(
+    category: Optional[str] = Query(None, description="Filter by Laptops, Smartphones, Tablets, Accessories"),
+    max_price: Optional[int] = Query(None, description="Maximum price in INR")
+):
+    """Retrieve electronics catalog products with optional filtering."""
+    df = load_products_df()
+    if df.empty:
+        return []
+
+    if category:
+        df = df[df["category"].str.lower() == category.lower()]
+    if max_price:
+        df = df[df["price_inr"] <= max_price]
+
+    return df.fillna("N/A").to_dict(orient="records")
 
 
 @app.get("/leads")
-def get_leads(db: Session = Depends(get_db)):
-    """Retrieve all leads from SQLite CRM."""
-    leads = db.query(Lead).order_by(Lead.updated_at.desc()).all()
-    return leads
+def list_leads(
+    status: Optional[str] = Query(None, description="Filter by HOT, WARM, COLD"),
+    db: Session = Depends(get_db)
+):
+    """Retrieve all sales leads from CRM."""
+    q = db.query(Lead)
+    if status:
+        q = q.filter(Lead.qualification_status == status.upper())
+    leads = q.order_by(Lead.updated_at.desc()).all()
+    return [
+        {
+            "id": l.id,
+            "name": l.name,
+            "email": l.email,
+            "phone": l.phone,
+            "city": l.city,
+            "category": l.interested_category,
+            "budget": l.budget,
+            "requirement": l.requirement,
+            "score": l.score,
+            "status": l.qualification_status,
+            "updated_at": str(l.updated_at)
+        }
+        for l in leads
+    ]
 
 
 @app.get("/appointments")
-def get_appointments(db: Session = Depends(get_db)):
-    """Retrieve all scheduled appointments."""
-    appts = db.query(Appointment).order_by(Appointment.slot_time.asc()).all()
-    return appts
+def list_appointments(db: Session = Depends(get_db)):
+    """Retrieve all scheduled store visits and sales consultations."""
+    appts = db.query(Appointment).order_by(Appointment.appointment_date.asc()).all()
+    return [
+        {
+            "appointment_id": a.appointment_id,
+            "customer_name": a.customer_name,
+            "customer_email": a.customer_email,
+            "date": a.appointment_date,
+            "time": a.appointment_time,
+            "type": a.appointment_type,
+            "product": a.interested_product,
+            "city": a.city,
+            "status": a.status,
+            "notes": a.notes
+        }
+        for a in appts
+    ]
 
 
 @app.get("/insights")
-def get_insights(db: Session = Depends(get_db)):
-    """Compute aggregate analytics: total calls, demos booked, conversion %, average score, sentiment."""
-    total_calls = db.query(Call).count()
-    demos_booked = db.query(Appointment).filter(Appointment.status == "CONFIRMED").count()
+def get_sales_insights(db: Session = Depends(get_db)):
+    """Retrieve aggregated executive sales analytics."""
     leads = db.query(Lead).all()
-    avg_score = round(sum(l.score for l in leads) / len(leads), 1) if leads else 0.0
-    conversion_rate = round((demos_booked / total_calls * 100), 1) if total_calls > 0 else 0.0
+    appts = db.query(Appointment).all()
+    calls = db.query(Call).all()
 
-    # Sentiment distribution
-    messages = db.query(Message).filter(Message.sender == "user").all()
-    sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
-    for m in messages:
-        lbl = m.sentiment_label or "neutral"
-        if lbl in sentiment_counts:
-            sentiment_counts[lbl] += 1
+    total_leads = len(leads)
+    hot_leads = sum(1 for l in leads if l.qualification_status == "HOT")
+    warm_leads = sum(1 for l in leads if l.qualification_status == "WARM")
+    cold_leads = sum(1 for l in leads if l.qualification_status == "COLD")
+    avg_score = round(sum(l.score for l in leads) / total_leads, 1) if total_leads else 0
 
     return {
-        "total_calls": total_calls,
-        "demos_booked": demos_booked,
-        "conversion_rate": conversion_rate,
-        "average_lead_score": avg_score,
-        "sentiment_distribution": sentiment_counts,
-        "top_questions": [
-            "What are your pricing tiers?",
-            "Can I optimize Kubernetes compute waste?",
-            "How does CloudScale AI compare with AWS native tools?",
-            "Is there a 14-day free trial?"
-        ]
+        "total_calls": len(calls),
+        "total_leads": total_leads,
+        "hot_leads": hot_leads,
+        "warm_leads": warm_leads,
+        "cold_leads": cold_leads,
+        "appointments_booked": len(appts),
+        "average_lead_score": avg_score
     }
 
 
 @app.post("/crm/webhook")
-def crm_webhook(payload: dict):
-    """Mock CRM receiver endpoint (HubSpot / Zoho simulation)."""
+def crm_webhook(payload: WebhookPayload):
+    """Mock webhook receiver for outbound CRM sync events (HubSpot / Zoho / Salesforce)."""
     return {
-        "status": "success",
-        "received_payload": payload,
-        "message": "CRM lead successfully synchronized."
+        "status": "received",
+        "event": payload.event,
+        "synced_at": time.time(),
+        "mock_destination": "ElectroMart India Salesforce CRM Sandbox"
     }

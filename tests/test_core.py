@@ -1,167 +1,250 @@
+"""
+ElectroMart India — Comprehensive Core Test Suite
+Validates:
+1. Product dataset loading and filtering by budget.
+2. Product recommendation engine accuracy.
+3. BANT Lead qualification scoring & bands (HOT, WARM, COLD).
+4. Sentiment analysis and escalation detection.
+5. TF-IDF RAG knowledge retrieval and cosine scoring.
+6. Appointment booking, duplicate slot prevention, and business hours validation.
+7. CSV and JSON dataset consistency.
+8. SQLite database persistence.
+"""
+import os
+import json
 import datetime
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import pandas as pd
 
-from database.db import Base
-from database.models import Lead, Call, Message, Appointment
-from backend.lead_qualification import (
-    LeadQualificationData, calculate_lead_score, get_qualification_status, extract_lead_rule_based
-)
-from backend.sentiment import analyze_sentiment, requires_human_escalation
-from backend.appointment import (
-    check_availability, book_appointment, parse_natural_datetime, generate_ics_content
-)
-from backend.rag import SimpleRAG, cosine_similarity, keyword_overlap_score
+from database.db import init_db, SessionLocal
+from database.models import Customer, Lead, Appointment, Call
+from backend.product_recommendation import load_products_df, parse_budget_from_text, recommend_products
+from backend.lead_qualification import extract_lead_from_conversation, LEAD_SCORING_WEIGHTS
+from backend.sentiment import analyze_sentiment, should_escalate
+from backend.rag import ElectroMartRAG
+from backend.appointment import parse_natural_datetime, validate_appointment_slot, book_appointment_in_db, generate_ics_content
 
 
-@pytest.fixture
-def test_db():
-    """Create fresh in-memory SQLite database for test isolation."""
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=engine)
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = TestingSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
+@pytest.fixture(autouse=True)
+def setup_database():
+    """Ensure database schema and synthetic records exist before tests."""
+    init_db()
 
 
-# ==============================================================================
-# 1. LEAD SCORING & QUALIFICATION TESTS
-# ==============================================================================
+def test_products_csv_loading_and_filtering():
+    """Verify products.csv has at least 25 items across 4 categories and budget filtering works."""
+    df = load_products_df()
+    assert not df.empty
+    assert len(df) >= 25
+    categories = set(df["category"].unique())
+    assert "Laptops" in categories
+    assert "Smartphones" in categories
+    assert "Tablets" in categories
+    assert "Accessories" in categories
+
+    # Budget filter: products under 50,000
+    under_50k = df[df["price_inr"] <= 50000]
+    assert len(under_50k) > 0
+    assert all(under_50k["price_inr"] <= 50000)
+
+
+def test_parse_budget_from_text():
+    """Test natural language budget extraction."""
+    assert parse_budget_from_text("I need a laptop under ₹70,000") == 70000
+    assert parse_budget_from_text("My budget is 35k") == 35000
+    assert parse_budget_from_text("Looking around 1 lakh") == 100000
+    assert parse_budget_from_text("Price under 25000 inr") == 25000
+
+
+def test_product_recommendation_programming_laptop():
+    """Verify CodeMaster Pro 15 or DevForge is recommended for coding within 70k."""
+    recs = recommend_products("I need a laptop under 70000 for programming and python", max_results=3)
+    assert len(recs) > 0
+    rec_names = [r["product_name"] for r in recs]
+    assert any("CodeMaster" in name or "ZenithBook" in name for name in rec_names)
+    assert recs[0]["price_inr"] <= 70000
+
+
+def test_product_recommendation_student_laptop():
+    """Verify budget student laptop recommendation."""
+    recs = recommend_products("I am a student looking for a laptop under 35k", max_results=2)
+    assert len(recs) > 0
+    assert recs[0]["price_inr"] <= 35000
+    assert "VoltBook" in recs[0]["product_name"] or "EcoBook" in recs[0]["product_name"]
+
+
 def test_lead_scoring_hot():
-    """Verify lead scoring reaches HOT (>= 70) with budget, urgent timeline, decision maker, need."""
-    lead = LeadQualificationData(
-        name="Alex Mercer",
-        email="alex@fintech.co",
-        budget="$1,500/month",
-        timeline="immediate",
-        is_decision_maker=True,
-        need="Need to reduce AWS EKS compute waste"
+    """Test that customer with clear need, budget, urgent timeline, contact, and intent scores HOT (>=70)."""
+    text = (
+        "My name is Priya Patel. My email is priya@example.com and phone is +91-98765-43210. "
+        "I need a laptop for programming with 16GB RAM under ₹70,000. "
+        "I want to buy immediately tomorrow and visit your store."
     )
-    score = calculate_lead_score(lead)
-    status = get_qualification_status(score)
-    assert score >= 70, f"Expected HOT score >= 70, got {score}"
-    assert status == "HOT"
+    lead = extract_lead_from_conversation(text)
+    assert lead.score >= 70
+    assert lead.status == "HOT"
+    assert lead.name == "Priya Patel"
+    assert lead.email == "priya@example.com"
 
 
 def test_lead_scoring_warm_and_cold():
-    """Verify WARM (>= 40) and COLD status boundaries."""
-    warm_lead = LeadQualificationData(
-        email="sarah@corp.com",
-        budget="$500",
-        need="Looking at cloud costs"
-    )
-    score_warm = calculate_lead_score(warm_lead)
-    assert get_qualification_status(score_warm) in ["WARM", "HOT"]
+    """Test WARM (40-69) and COLD (<40) lead classifications."""
+    # Warm lead: has budget and requirement, but no email or immediate timeline
+    warm_text = "I am looking for a camera smartphone under 35,000."
+    lead_warm = extract_lead_from_conversation(warm_text)
+    assert 40 <= lead_warm.score < 70
+    assert lead_warm.status == "WARM"
 
-    cold_lead = LeadQualificationData()
-    score_cold = calculate_lead_score(cold_lead)
-    assert score_cold == 0
-    assert get_qualification_status(score_cold) == "COLD"
-
-
-def test_rule_based_lead_extraction():
-    """Verify regex extraction of email, name, and budget from conversation string."""
-    text = "Hi, my name is David from Stripe. My email is david@stripe.com and our budget is $1,499/month. We need it this quarter."
-    extracted = extract_lead_rule_based(text)
-    assert extracted.email == "david@stripe.com"
-    assert extracted.name == "David"
-    assert "1,499" in extracted.budget
-    assert extracted.timeline != ""
+    # Cold lead: vague browsing
+    cold_text = "Just checking prices."
+    lead_cold = extract_lead_from_conversation(cold_text)
+    assert lead_cold.score < 40
+    assert lead_cold.status == "COLD"
 
 
-# ==============================================================================
-# 2. SENTIMENT ANALYSIS & HUMAN ESCALATION TESTS
-# ==============================================================================
-def test_sentiment_positive():
-    label, score = analyze_sentiment("This product is awesome and great, I love it!")
-    assert label == "positive"
-    assert score > 0
+def test_sentiment_analysis_accuracy():
+    """Verify positive, neutral, and negative sentiment detection without false positives."""
+    # Positive
+    label_p, score_p = analyze_sentiment("Great product! I love the display and helpful customer service.")
+    assert label_p == "positive"
+    assert score_p > 0.0
+
+    # Negative
+    label_n, score_n = analyze_sentiment("This price is terrible and overpriced, very frustrating service.")
+    assert label_n == "negative"
+    assert score_n < 0.0
+    assert should_escalate(score_n) is True
+
+    # Neutral (critical test: 'technova', 'know', or 'laptop' must NOT trigger negative 'no')
+    label_neu, score_neu = analyze_sentiment("Hello, I want to know about your laptop models.")
+    assert label_neu == "neutral"
+    assert score_neu == 0.0
 
 
-def test_sentiment_negative_and_escalation():
-    label, score = analyze_sentiment("This is terrible, useless, and bad. Waste of money.")
-    assert label == "negative"
-    assert score < -0.5
-    assert requires_human_escalation(score) is True
+def test_rag_retrieval_and_cosine_scoring():
+    """Verify TF-IDF RAG retrieves accurate context chunks."""
+    rag = ElectroMartRAG()
+    results = rag.retrieve("What is the warranty policy on laptops?", top_k=2)
+    assert len(results) > 0
+    top_chunk, score = results[0]
+    assert score > 0.0
+    assert "warranty" in top_chunk.lower() or "policy" in top_chunk.lower()
 
 
-def test_sentiment_neutral():
-    label, score = analyze_sentiment("Can you tell me about the features?")
-    assert label == "neutral"
-    assert score == 0.0
+def test_appointment_booking_and_double_booking_prevention():
+    """Test appointment booking, slot verification, and duplicate booking prevention."""
+    db = SessionLocal()
+    try:
+        test_email = "test.shopper@example.com"
+        test_date = datetime.date.today() + datetime.timedelta(days=3)
+        test_time = "04:00 PM"
+
+        # Clear existing test bookings
+        db.query(Appointment).filter(
+            Appointment.customer_email == test_email,
+            Appointment.appointment_date == test_date.strftime("%Y-%m-%d")
+        ).delete()
+        db.commit()
+
+        # 1. Book first appointment
+        ok1, msg1, appt1 = book_appointment_in_db(
+            db=db,
+            customer_name="Test Shopper",
+            customer_email=test_email,
+            customer_phone="+91-99999-88888",
+            date_val=test_date,
+            time_str=test_time,
+            appointment_type="Store Visit",
+            interested_product="CodeMaster Pro 15",
+            city="Bengaluru"
+        )
+        assert ok1 is True
+        assert appt1 is not None
+        assert "confirmed" in msg1.lower()
+
+        # 2. Attempt duplicate booking for same customer and slot
+        ok2, msg2, appt2 = book_appointment_in_db(
+            db=db,
+            customer_name="Test Shopper",
+            customer_email=test_email,
+            customer_phone="+91-99999-88888",
+            date_val=test_date,
+            time_str=test_time,
+            appointment_type="Store Visit",
+            interested_product="CodeMaster Pro 15",
+            city="Bengaluru"
+        )
+        assert ok2 is False
+        assert "already have a confirmed appointment" in msg2.lower()
+        assert appt2 is None
+
+    finally:
+        db.close()
 
 
-# ==============================================================================
-# 3. APPOINTMENT BOOKING & DOUBLE-BOOKING TESTS
-# ==============================================================================
-def test_appointment_booking_and_double_booking(test_db):
-    """Verify demo booking succeeds, and duplicate booking of identical slot is rejected."""
-    # Find next available weekday at 14:00
-    now = datetime.datetime.now()
-    days_ahead = 1
-    slot = datetime.datetime(now.year, now.month, now.day, 14, 0) + datetime.timedelta(days=days_ahead)
-    while slot.weekday() >= 5:  # Skip weekends
-        slot += datetime.timedelta(days=1)
+def test_appointment_hours_validation():
+    """Verify that appointments outside operating hours (10 AM to 8:30 PM) are rejected."""
+    today = datetime.date.today()
+    # 02:00 AM is outside operating hours
+    valid, reason = validate_appointment_slot(today, "02:00 AM")
+    assert valid is False
+    assert "operating hours" in reason.lower()
 
-    # First booking should succeed
-    success1, msg1, appt1 = book_appointment(test_db, "Alice Smith", "alice@enterprise.com", slot, "call-123")
-    assert success1 is True
-    assert appt1 is not None
-
-    # Second booking for the same slot must fail
-    success2, msg2, appt2 = book_appointment(test_db, "Bob Jones", "bob@other.com", slot, "call-456")
-    assert success2 is False
-    assert "already booked" in msg2.lower()
-    assert appt2 is None
-
-
-def test_appointment_weekend_and_off_hours_rejection(test_db):
-    """Verify weekend slots and outside working hours (9am-6pm) are rejected."""
-    # Weekend test (Sunday)
-    now = datetime.datetime.now()
-    sunday_dt = now + datetime.timedelta(days=(6 - now.weekday()))
-    sunday_slot = datetime.datetime(sunday_dt.year, sunday_dt.month, sunday_dt.day, 14, 0)
-    avail, msg = check_availability(test_db, sunday_slot)
-    assert avail is False
-    assert "weekend" in msg.lower()
-
-    # Off-hours test (8:00 AM or 19:00 PM)
-    weekday_dt = now
-    while weekday_dt.weekday() >= 5:
-        weekday_dt += datetime.timedelta(days=1)
-    off_slot = datetime.datetime(weekday_dt.year, weekday_dt.month, weekday_dt.day, 20, 0)
-    avail_off, msg_off = check_availability(test_db, off_slot)
-    assert avail_off is False
-    assert "outside working hours" in msg_off.lower()
+    # 04:00 PM is valid
+    valid_pm, _ = validate_appointment_slot(today, "04:00 PM")
+    assert valid_pm is True
 
 
 def test_ics_generation():
-    """Verify iCalendar file string generation contains required VCALENDAR markers."""
-    slot = datetime.datetime(2026, 12, 1, 15, 0)
-    ics = generate_ics_content("Alice Smith", slot)
+    """Verify RFC 5545 calendar file content structure."""
+    target_date = datetime.date(2026, 12, 1)
+    ics = generate_ics_content("Priya Patel", target_date, "04:00 PM", "CodeMaster Pro 15")
     assert "BEGIN:VCALENDAR" in ics
     assert "END:VCALENDAR" in ics
-    assert "Alice Smith" in ics
+    assert "SUMMARY:ElectroMart India Store Demo: CodeMaster Pro 15" in ics
 
 
-# ==============================================================================
-# 4. RAG RETRIEVAL & COSINE SIMILARITY TESTS
-# ==============================================================================
-def test_cosine_similarity():
-    v1 = [1.0, 0.0, 0.0]
-    v2 = [1.0, 0.0, 0.0]
-    v3 = [0.0, 1.0, 0.0]
-    assert pytest.approx(cosine_similarity(v1, v2), 0.01) == 1.0
-    assert pytest.approx(cosine_similarity(v1, v3), 0.01) == 0.0
+def test_synthetic_datasets_consistency():
+    """Verify consistency between products.csv, customers.csv, leads.csv, and faqs.json."""
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+
+    # Products >= 25
+    df_p = pd.read_csv(os.path.join(data_dir, "products.csv"))
+    assert len(df_p) >= 25
+
+    # Customers >= 20
+    df_c = pd.read_csv(os.path.join(data_dir, "customers.csv"))
+    assert len(df_c) >= 20
+
+    # Leads >= 15
+    df_l = pd.read_csv(os.path.join(data_dir, "sample_leads.csv"))
+    assert len(df_l) >= 15
+
+    # Check foreign keys from leads to customers
+    cust_ids = set(df_c["customer_id"].unique())
+    lead_cust_ids = set(df_l["customer_id"].unique())
+    assert lead_cust_ids.issubset(cust_ids)
+
+    # FAQs >= 25
+    with open(os.path.join(data_dir, "faqs.json"), "r", encoding="utf-8") as f:
+        faqs = json.load(f)
+    assert len(faqs) >= 25
 
 
-def test_rag_keyword_retrieval():
-    rag = SimpleRAG()
-    results = rag.retrieve("pricing tiers cost starter professional", top_k=2)
-    assert len(results) > 0
-    top_chunk, score = results[0]
-    assert "pricing" in top_chunk.lower() or "tier" in top_chunk.lower() or "$499" in top_chunk
+def test_database_persistence():
+    """Verify that customer and call records persist in SQLite."""
+    db = SessionLocal()
+    try:
+        call_id = "TEST-CALL-001"
+        db.query(Call).filter(Call.id == call_id).delete()
+        db.commit()
+
+        call = Call(id=call_id, language="en", summary="Test sales call")
+        db.add(call)
+        db.commit()
+
+        fetched = db.query(Call).filter(Call.id == call_id).first()
+        assert fetched is not None
+        assert fetched.summary == "Test sales call"
+    finally:
+        db.close()

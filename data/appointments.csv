@@ -1,0 +1,11 @@
+appointment_id,customer_name,customer_email,customer_phone,date,time,appointment_type,interested_product,city,status,notes
+APT-501,Priya Patel,priya.patel@example.com,+91-98791-22334,2026-11-28,04:00 PM,Store Visit,CodeMaster Pro 15,Ahmedabad,Confirmed,Customer wants hands-on demo with keyboard and terminal.
+APT-502,Rohan Iyer,rohan.iyer@example.com,+91-98401-33445,2026-11-29,11:30 AM,Product Consultation,OmniBook Slim 13,Bengaluru,Confirmed,Checking lightweight ultrabook options for travel.
+APT-503,Aditya Chauhan,aditya.c@example.com,+91-98141-43445,2026-11-29,03:00 PM,Store Visit,CyberPulse G15,Chandigarh,Confirmed,Wants to test thermals and FPS on display unit.
+APT-504,Ananya Sen,ananya.sen@example.com,+91-98311-44556,2026-11-30,02:00 PM,Store Visit,Zenith Pad Creator 12,Kolkata,Confirmed,Testing stylus latency and pressure curves.
+APT-505,Vikram Malhotra,vikram.m@example.com,+91-98111-55667,2026-12-01,05:00 PM,Sales Callback,Aura Flagship X,New Delhi,Scheduled,Corporate bulk order discussion for 10 units.
+APT-506,Karan Joshi,karan.j@example.com,+91-98221-77889,2026-12-02,10:30 AM,Store Visit,DevForge Extreme 16,Pune,Scheduled,Evaluating 32GB RAM upgrade feasibility.
+APT-507,Aarav Sharma,aarav.sharma@example.com,+91-98201-11223,2026-12-02,01:00 PM,Store Visit,VoltBook Student 14,Mumbai,Scheduled,Applying Student Tech Pass offer discount.
+APT-508,Divya Nair,divya.nair@example.com,+91-98471-88990,2026-12-03,04:30 PM,Product Consultation,Zenith CamPro 5G,Kochi,Scheduled,Camera sample inspection in outdoor lighting.
+APT-509,Siddharth Rao,sid.rao@example.com,+91-98801-21223,2026-12-04,06:00 PM,Sales Callback,MechKeys Wireless Keyboard,Bengaluru,Scheduled,Enquiring about brown switch option.
+APT-510,Sneha Reddy,sneha.reddy@example.com,+91-98491-66778,2026-11-26,11:00 AM,Store Visit,TabStudy 10.1,Hyderabad,Completed,"Demo completed, purchased with 1 year warranty."

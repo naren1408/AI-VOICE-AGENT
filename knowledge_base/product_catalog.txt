@@ -1,0 +1,378 @@
+# ElectroMart India — Complete Product Catalog
+
+All products, prices, and specifications listed below are synthetic demonstration records for ElectroMart India.
+
+## Product: VoltBook Student 14 (LAP-101)
+- Category: Laptops
+- Brand: VoltTech
+- Price: ₹34,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Intel Core i3 12th Gen
+- RAM: 8GB DDR4
+- Storage: 256GB NVMe SSD
+- Graphics: Intel UHD Graphics
+- Display: 14-inch FHD Anti-Glare
+- Battery: Up to 8 hours (45Wh)
+- Warranty: 1 Year Standard Warranty
+- Best Use Case: Students / Online Classes / Web Browsing
+- Overview: Affordable and lightweight laptop designed for high school and college students with long battery life.
+
+## Product: ZenithBook Air 15 (LAP-102)
+- Category: Laptops
+- Brand: Zenith
+- Price: ₹48,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: AMD Ryzen 5 5500U
+- RAM: 16GB DDR4
+- Storage: 512GB NVMe SSD
+- Graphics: AMD Radeon Vega 7
+- Display: 15.6-inch FHD IPS
+- Battery: Up to 10 hours (54Wh)
+- Warranty: 1 Year Standard Warranty
+- Best Use Case: Office Work / Multitasking / Students
+- Overview: Slim aluminum body with comfortable backlit keyboard, ideal for daily office tasks and productivity.
+
+## Product: CodeMaster Pro 15 (LAP-103)
+- Category: Laptops
+- Brand: NovaCorp
+- Price: ₹64,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Intel Core i5 13500H
+- RAM: 16GB DDR5
+- Storage: 512GB Gen4 SSD
+- Graphics: Intel Iris Xe
+- Display: 15.6-inch 2K 100% sRGB
+- Battery: Up to 9 hours (65Wh)
+- Warranty: 2 Years On-Site Warranty
+- Best Use Case: Programming / Software Development
+- Overview: Engineered for developers: fast 13th Gen H-series processor, 16GB high-speed DDR5 RAM, and high-res screen for code clarity.
+
+## Product: DevForge Extreme 16 (LAP-104)
+- Category: Laptops
+- Brand: NovaCorp
+- Price: ₹79,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: AMD Ryzen 7 7735HS
+- RAM: 16GB DDR5 (Expandable to 64GB)
+- Storage: 1TB NVMe SSD
+- Graphics: NVIDIA GeForce RTX 3050 6GB
+- Display: 16-inch WQXGA 120Hz
+- Battery: Up to 8 hours (75Wh)
+- Warranty: 2 Years Comprehensive Warranty
+- Best Use Case: Programming / Docker / Machine Learning
+- Overview: Powerhouse for full-stack developers, mobile app devs, and data scientists running virtual machines and heavy compilers.
+
+## Product: OmniBook Slim 13 (LAP-105)
+- Category: Laptops
+- Brand: Aura
+- Price: ₹89,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Intel Core i7 1360P
+- RAM: 16GB LPDDR5
+- Storage: 1TB NVMe SSD
+- Graphics: Intel Iris Xe
+- Display: 13.3-inch OLED 2.8K
+- Battery: Up to 12 hours (60Wh)
+- Warranty: 1 Year International Warranty
+- Best Use Case: Office Work / Business Travel / Executive
+- Overview: Ultra-portable 1.1kg premium ultrabook featuring a stunning OLED display and all-day battery life.
+
+## Product: CyberPulse G15 (LAP-106)
+- Category: Laptops
+- Brand: PulseGaming
+- Price: ₹94,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: AMD Ryzen 7 7840HS
+- RAM: 16GB DDR5
+- Storage: 1TB Gen4 SSD
+- Graphics: NVIDIA GeForce RTX 4060 8GB GDDR6
+- Display: 15.6-inch QHD 165Hz
+- Battery: Up to 6 hours (80Wh)
+- Warranty: 1 Year Accidental Damage Protection
+- Best Use Case: Gaming / Video Editing / 3D Modeling
+- Overview: High-performance gaming machine with liquid metal cooling, MUX switch, and vibrant 165Hz display.
+
+## Product: StudioCraft Pro 16 (LAP-107)
+- Category: Laptops
+- Brand: Apex
+- Price: ₹149,999 (Inclusive of all taxes)
+- Stock Status: Low Stock
+- Processor: Intel Core i9 13900H
+- RAM: 32GB DDR5
+- Storage: 2TB NVMe SSD
+- Graphics: NVIDIA GeForce RTX 4070 8GB Studio
+- Display: 16-inch 4K Mini-LED 120Hz
+- Battery: Up to 7 hours (90Wh)
+- Warranty: 3 Years On-Site Professional Care
+- Best Use Case: Professional Use / Creative Studio / VFX
+- Overview: Ultimate creator workstation with calibrated color accuracy, studio drivers, and massive storage capacity.
+
+## Product: EcoBook Lite 15 (LAP-108)
+- Category: Laptops
+- Brand: GreenTech
+- Price: ₹24,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Intel Celeron N4500
+- RAM: 8GB LPDDR4
+- Storage: 128GB eMMC + 256GB SSD
+- Graphics: Intel UHD Graphics
+- Display: 15.6-inch HD
+- Battery: Up to 9 hours (42Wh)
+- Warranty: 1 Year Standard Warranty
+- Best Use Case: Budget / Students / Casual Browsing
+- Overview: Eco-friendly recycled chassis, basic daily computing for school projects, video streaming, and document editing.
+
+## Product: Apex Phone Neo 5G (PHN-201)
+- Category: Smartphones
+- Brand: ApexMobile
+- Price: ₹11,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: MediaTek Dimensity 6020
+- RAM: 6GB RAM
+- Storage: 128GB UFS 2.2
+- Graphics: Mali-G57
+- Display: 6.56-inch 90Hz HD+ LCD
+- Battery: 5000mAh with 18W charging
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Budget / Daily Use / 5G Entry
+- Overview: Affordable 5G smartphone with massive 5000mAh battery and AI dual 50MP rear camera.
+
+## Product: Pulse Velocity 5G (PHN-202)
+- Category: Smartphones
+- Brand: PulseMobile
+- Price: ₹16,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Snapdragon 695 5G
+- RAM: 8GB RAM
+- Storage: 128GB UFS 2.2
+- Graphics: Adreno 619
+- Display: 6.67-inch 120Hz AMOLED FHD+
+- Battery: 5000mAh with 33W Fast Charge
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Mid-Range / Multimedia / Battery Life
+- Overview: Smooth 120Hz AMOLED screen, stereo speakers, and 64MP OIS camera delivering flagship-grade entertainment.
+
+## Product: Nova Edge 11 Pro (PHN-203)
+- Category: Smartphones
+- Brand: NovaCorp
+- Price: ₹27,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: MediaTek Dimensity 8200
+- RAM: 8GB LPDDR5
+- Storage: 256GB UFS 3.1
+- Graphics: Mali-G610
+- Display: 6.7-inch 144Hz 1.5K Curved AMOLED
+- Battery: 4600mAh with 80W TurboCharge
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Mid-Range / Photography / Fast Charging
+- Overview: Curved edge AMOLED display, 108MP portrait sensor, and 0-50% charge in just 12 minutes.
+
+## Product: Zenith CamPro 5G (PHN-204)
+- Category: Smartphones
+- Brand: Zenith
+- Price: ₹34,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Snapdragon 7+ Gen 2
+- RAM: 12GB LPDDR5
+- Storage: 256GB UFS 3.1
+- Graphics: Adreno 725
+- Display: 6.74-inch 120Hz AMOLED HDR10+
+- Battery: 5000mAh with 67W SuperVOOC
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Mid-Range Premium / Photography / Gaming
+- Overview: Co-engineered triple 50MP Sony sensor camera system with optical image stabilization and flagship processor.
+
+## Product: Aura Flagship X (PHN-205)
+- Category: Smartphones
+- Brand: Aura
+- Price: ₹64,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Snapdragon 8 Gen 3
+- RAM: 12GB LPDDR5X
+- Storage: 256GB UFS 4.0
+- Graphics: Adreno 750
+- Display: 6.8-inch 120Hz LTPO QHD+ AMOLED
+- Battery: 5400mAh with 100W Wired + 50W Wireless
+- Warranty: 2 Years VIP Priority Warranty
+- Best Use Case: Premium / Flagship Performance / All-Rounder
+- Overview: True flagship experience: titanium alloy frame, periscope telephoto lens with 100x zoom, and IP68 water resistance.
+
+## Product: Titan Fold Z (PHN-206)
+- Category: Smartphones
+- Brand: TitanMobile
+- Price: ₹124,999 (Inclusive of all taxes)
+- Stock Status: Low Stock
+- Processor: Snapdragon 8 Gen 3
+- RAM: 16GB LPDDR5X
+- Storage: 512GB UFS 4.0
+- Graphics: Adreno 750
+- Display: 7.9-inch Foldable Dynamic AMOLED 2X
+- Battery: 4800mAh with 45W Fast Charging
+- Warranty: 2 Years Screen Replacement Care
+- Best Use Case: Premium / Foldable / Executive Productivity
+- Overview: Revolutionary zero-gap hinge foldable smartphone with tablet-sized productivity screen and multi-window multitasking.
+
+## Product: Volt PowerMax 5G (PHN-207)
+- Category: Smartphones
+- Brand: VoltTech
+- Price: ₹13,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Snapdragon 4 Gen 2
+- RAM: 6GB RAM
+- Storage: 128GB Storage
+- Graphics: Adreno 613
+- Display: 6.79-inch 90Hz FHD+ IPS
+- Battery: 6000mAh Monster Battery
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Battery Life / Delivery Partners / Long Travel
+- Overview: Massive 6000mAh battery providing up to 2.5 days of continuous usage on a single charge.
+
+## Product: TabStudy 10.1 (TAB-301)
+- Category: Tablets
+- Brand: VoltTech
+- Price: ₹14,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Octa-Core Helio G80
+- RAM: 4GB RAM
+- Storage: 64GB (expandable to 512GB)
+- Graphics: Mali-G52
+- Display: 10.1-inch FHD IPS
+- Battery: 7000mAh with 15W charging
+- Warranty: 1 Year Standard Warranty
+- Best Use Case: Students / E-Learning / Reading
+- Overview: Budget student tablet with eye-comfort TUV certification, parental controls, and dual stereo speakers.
+
+## Product: NovaPad Air 11 (TAB-302)
+- Category: Tablets
+- Brand: NovaCorp
+- Price: ₹24,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Snapdragon 778G
+- RAM: 6GB LPDDR4X
+- Storage: 128GB UFS 2.2
+- Graphics: Adreno 642L
+- Display: 11-inch 2.5K 120Hz IPS
+- Battery: 8000mAh with 33W Fast Charge
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Multimedia / Notes / Light Office
+- Overview: Sleek 6.9mm metallic tablet with 120Hz smooth refresh rate and stylus pen support for digital note-taking.
+
+## Product: Zenith Pad Creator 12 (TAB-303)
+- Category: Tablets
+- Brand: Zenith
+- Price: ₹38,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: MediaTek Dimensity 9000
+- RAM: 8GB LPDDR5
+- Storage: 256GB UFS 3.1
+- Graphics: Mali-G710
+- Display: 12.4-inch 144Hz 3K LCD
+- Battery: 10000mAh with 67W SuperVOOC
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Digital Art / Sketching / Video Streaming
+- Overview: Creator-focused tablet bundle with magnetic pressure stylus, 4096 pressure levels, and quad Dolby Atmos speakers.
+
+## Product: Aura Slate Pro 13 (TAB-304)
+- Category: Tablets
+- Brand: Aura
+- Price: ₹74,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Apple M2 Equivalent Custom Octa-Core
+- RAM: 16GB RAM
+- Storage: 512GB High Speed Storage
+- Graphics: Custom 10-Core GPU
+- Display: 12.9-inch Tandem OLED 120Hz
+- Battery: 10500mAh with 45W Fast Charging
+- Warranty: 2 Years Premium Care
+- Best Use Case: Professional Work / CAD / Music Production
+- Overview: Desktop-class tablet with detachable magnetic keyboard support, thunderbolt port, and ultra-bright 1600 nits OLED.
+
+## Product: EcoTab Mini 8.4 (TAB-305)
+- Category: Tablets
+- Brand: GreenTech
+- Price: ₹9,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Unisoc T616
+- RAM: 4GB RAM
+- Storage: 64GB Storage
+- Graphics: Mali-G57
+- Display: 8.4-inch FHD IPS
+- Battery: 5500mAh with 10W charging
+- Warranty: 1 Year Standard Warranty
+- Best Use Case: E-Reader / Commute / Kids
+- Overview: Compact one-hand tablet for book lovers and lightweight reading during daily commutes.
+
+## Product: Aura SoundBeats ANC Headset (ACC-401)
+- Category: Accessories
+- Brand: Aura
+- Price: ₹4,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Custom DSP Audio Chip
+- RAM: nan
+- Storage: nan
+- Graphics: nan
+- Display: nan
+- Battery: Up to 50 hours ANC off / 35h ANC on
+- Warranty: 1 Year Replacement Warranty
+- Best Use Case: Office Calls / Travel / Music
+- Overview: Over-ear wireless headphones with 40mm beryllium drivers, 38dB Active Noise Cancellation and multipoint Bluetooth 5.3.
+
+## Product: Pulse BassBuds Pro TWS (ACC-402)
+- Category: Accessories
+- Brand: PulseAudio
+- Price: ₹2,499 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Bluetooth 5.3 SoC
+- RAM: nan
+- Storage: nan
+- Graphics: nan
+- Display: nan
+- Battery: 32 hours total with case (8h earbuds)
+- Warranty: 1 Year Brand Warranty
+- Best Use Case: Gym / Daily Commute / Calls
+- Overview: True wireless earbuds featuring 12mm deep-bass drivers, quad-mic ENC for crystal-clear calls, and IPX5 sweat resistance.
+
+## Product: VoltCharge 100W GaN Desktop Charger (ACC-403)
+- Category: Accessories
+- Brand: VoltTech
+- Price: ₹3,499 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: GaNFast Smart IC
+- RAM: nan
+- Storage: nan
+- Graphics: nan
+- Display: nan
+- Battery: N/A (Wall Adapter)
+- Warranty: 18 Months Replacement Warranty
+- Best Use Case: Multi-Device Charging / Laptops & Phones
+- Overview: Ultra-compact Gallium Nitride 4-port charger (3 USB-C + 1 USB-A) capable of powering laptops, phones, and tablets simultaneously.
+
+## Product: MechKeys RGB Wireless Mechanical Keyboard (ACC-404)
+- Category: Accessories
+- Brand: NovaCorp
+- Price: ₹3,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: Anti-Ghosting Microcontroller
+- RAM: nan
+- Storage: nan
+- Graphics: nan
+- Display: nan
+- Battery: 4000mAh rechargeable (up to 200 hours)
+- Warranty: 1 Year Standard Warranty
+- Best Use Case: Coding / Gaming / Office Desk Setup
+- Overview: 75% compact hot-swappable mechanical keyboard with pre-lubed red switches, sound-dampening foam, and multi-device pairing.
+
+## Product: PrecisionGlide Ergonomic Wireless Mouse (ACC-405)
+- Category: Accessories
+- Brand: NovaCorp
+- Price: ₹1,999 (Inclusive of all taxes)
+- Stock Status: In Stock
+- Processor: PixArt Optical Sensor
+- RAM: nan
+- Storage: nan
+- Graphics: nan
+- Display: nan
+- Battery: Up to 90 days on USB-C charge
+- Warranty: 1 Year Standard Warranty
+- Best Use Case: Ergonomics / Office / Long Working Hours
+- Overview: 57-degree natural vertical angle reduces wrist strain, silent click switches, and dual Bluetooth/2.4GHz wireless connectivity.

@@ -1,0 +1,39 @@
+# ElectroMart India — Product Comparison Guide
+
+## Comparison 1: Developer Laptops
+### CodeMaster Pro 15 vs. DevForge Extreme 16
+| Feature | CodeMaster Pro 15 (₹64,999) | DevForge Extreme 16 (₹79,999) |
+| :--- | :--- | :--- |
+| **Processor** | Intel Core i5 13500H (12 Cores) | AMD Ryzen 7 7735HS (8 Cores, 16 Threads) |
+| **RAM** | 16GB DDR5 | 16GB DDR5 (Expandable to 64GB) |
+| **Storage** | 512GB Gen4 NVMe SSD | 1TB Gen4 NVMe SSD |
+| **Graphics** | Intel Iris Xe (Integrated) | NVIDIA GeForce RTX 3050 6GB Dedicated |
+| **Display** | 15.6-inch 2K 100% sRGB | 16-inch WQXGA 120Hz |
+| **Weight** | 1.65 kg | 1.95 kg |
+| **Best For** | Web dev, Python, microservices, office | Docker, ML/AI, Android emulators, heavy builds |
+| **Verdict** | Choose CodeMaster Pro for standard dev within ₹65k. Choose DevForge if you need dedicated GPU & 1TB SSD. |
+
+---
+
+## Comparison 2: Mid-Range 5G Smartphones
+### Pulse Velocity 5G vs. Zenith CamPro 5G
+| Feature | Pulse Velocity 5G (₹16,999) | Zenith CamPro 5G (₹34,999) |
+| :--- | :--- | :--- |
+| **Processor** | Snapdragon 695 5G | Snapdragon 7+ Gen 2 |
+| **RAM / ROM** | 8GB / 128GB | 12GB / 256GB |
+| **Main Camera**| 64MP OIS | Triple 50MP Sony OIS |
+| **Display** | 6.67-inch 120Hz AMOLED FHD+ | 6.74-inch 120Hz AMOLED HDR10+ |
+| **Charging** | 33W Fast Charge | 67W SuperVOOC |
+| **Verdict** | Pulse Velocity is the budget champion. Zenith CamPro is the photography & creator choice. |
+
+---
+
+## Comparison 3: Tablets for Work & Study
+### TabStudy 10.1 vs. Zenith Pad Creator 12
+| Feature | TabStudy 10.1 (₹14,999) | Zenith Pad Creator 12 (₹38,999) |
+| :--- | :--- | :--- |
+| **Display** | 10.1-inch FHD 60Hz | 12.4-inch 3K 144Hz |
+| **RAM / ROM** | 4GB / 64GB | 8GB / 256GB |
+| **Stylus** | Touch Pen Optional | Active Magnetic Pressure Stylus Included |
+| **Audio** | Dual Speakers | Quad Dolby Atmos Speakers |
+| **Verdict** | TabStudy for student reading & lectures. Zenith Pad for drawing, design & multitasking. |

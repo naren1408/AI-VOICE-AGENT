@@ -1,0 +1,17 @@
+# ElectroMart India — Delivery, Payment & Order Processing
+
+## Delivery Timelines & Process
+- Express Metro Delivery: 24 to 48 hours across Mumbai, Delhi NCR, Bengaluru, Hyderabad, Chennai, Pune, Ahmedabad, and Kolkata.
+- Rest of India: 3 to 5 business days via insured express air couriers.
+- Live Tracking: Real-time SMS and WhatsApp updates with GPS tracking for all dispatches.
+- Open-Box Inspection: Free open-box inspection on delivery for laptops and flagships above ₹20,000. Customers inspect the physical seal before accepting.
+
+## Payment Methods Accepted
+- UPI: Google Pay, PhonePe, Paytm, BHIM (Zero transaction surcharge).
+- Credit & Debit Cards: Visa, MasterCard, RuPay, American Express.
+- No-Cost EMI: Available on 15+ leading bank credit cards.
+- Net Banking: All scheduled commercial banks in India.
+- Cash on Delivery (COD): Accepted for orders up to ₹15,000.
+
+## Cancellation Process
+- Orders can be cancelled with a single click or phone call before warehouse dispatch for a 100% immediate refund.

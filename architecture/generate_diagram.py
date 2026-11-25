@@ -1,89 +1,97 @@
+"""
+ElectroMart India — Architecture Diagram Generator
+Generates architecture/system_architecture.png using Matplotlib.
+Clean, modern, high-resolution visual layout.
+"""
 import os
-import sys
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+ARCH_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_PNG = os.path.join(ARCH_DIR, "system_architecture.png")
 
-def generate_architecture_diagram(output_path: str = "architecture/system_architecture.png"):
-    """Generate a clean, high-resolution architecture diagram PNG for the MVP and scalable production."""
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    fig, ax = plt.subplots(figsize=(14, 8), dpi=300)
-    fig.patch.set_facecolor('#0B0F19')
-    ax.set_facecolor('#0B0F19')
+def draw_architecture():
+    fig, ax = plt.subplots(figsize=(14, 9), dpi=300)
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 9)
+    ax.axis("off")
 
-    # Title & Subtitle
-    plt.text(0.5, 0.95, "CloudScale AI: Autonomous Sales Voice Agent Architecture",
-             color='#FFFFFF', fontsize=18, fontweight='bold', ha='center', transform=ax.transAxes)
-    plt.text(0.5, 0.91, "End-to-End Pipeline: Voice/Text Ingestion -> RAG -> Tool-Calling Agent -> CRM & Calendar",
-             color='#94A3B8', fontsize=11, ha='center', transform=ax.transAxes)
+    # Background
+    fig.patch.set_facecolor("#FFFFFF")
+    ax.set_facecolor("#FFFFFF")
 
-    # Box styles
-    client_box = dict(boxstyle="round,pad=0.5", facecolor='#1E293B', edgecolor='#38BDF8', linewidth=2)
-    core_box = dict(boxstyle="round,pad=0.5", facecolor='#1E293B', edgecolor='#3B82F6', linewidth=2)
-    ai_box = dict(boxstyle="round,pad=0.5", facecolor='#1E1B4B', edgecolor='#8B5CF6', linewidth=2)
-    data_box = dict(boxstyle="round,pad=0.5", facecolor='#064E3B', edgecolor='#10B981', linewidth=2)
-    prod_box = dict(boxstyle="round,pad=0.5", facecolor='#451A03', edgecolor='#F59E0B', linewidth=2, linestyle='--')
+    # Title
+    ax.text(7, 8.5, "ElectroMart India — Autonomous AI Sales Voice Agent Architecture",
+            fontsize=15, weight="bold", ha="center", color="#0F172A")
+    ax.text(7, 8.15, "Multilingual Voice Advisory • RAG Product Catalog • Deterministic Lead Scoring • SQLite CRM",
+            fontsize=10, ha="center", color="#475569")
 
-    # Draw Nodes
-    # 1. Client Layer
-    ax.text(0.08, 0.70, "Client Layer\n(Streamlit UI / WebApp)\n• Mic (st.audio_input)\n• Text Chat & Dashboard",
-            ha="center", va="center", color="#F8FAFC", fontsize=10, bbox=client_box, transform=ax.transAxes)
+    # Helper function to draw rounded boxes
+    def draw_box(x, y, w, h, title, subtitle, bg_color, border_color):
+        box = patches.FancyBboxPatch(
+            (x, y), w, h,
+            boxstyle="round,pad=0.2,rounding_size=0.15",
+            facecolor=bg_color, edgecolor=border_color, linewidth=1.5
+        )
+        ax.add_patch(box)
+        ax.text(x + w / 2, y + h * 0.65, title, fontsize=10.5, weight="bold", ha="center", va="center", color="#0F172A")
+        ax.text(x + w / 2, y + h * 0.32, subtitle, fontsize=8.2, ha="center", va="center", color="#475569")
 
-    # 2. Gateway / Load Balancer
-    ax.text(0.25, 0.70, "Gateway\n(FastAPI Server)\n• REST & Audio Endpoints\n• CORS & Session Router",
-            ha="center", va="center", color="#F8FAFC", fontsize=10, bbox=core_box, transform=ax.transAxes)
+    # 1. Client Layer (Top)
+    draw_box(1.0, 6.7, 3.4, 0.95, "🖥️ Streamlit Frontend UI", "3 Tabs • Live Chat • CRM • BI Insights", "#EFF6FF", "#2563EB")
+    draw_box(5.3, 6.7, 3.4, 0.95, "🎙️ Speech-to-Text (STT)", "Gemini 2.5 Flash / Demo Transcription", "#F0FDF4", "#16A34A")
+    draw_box(9.6, 6.7, 3.4, 0.95, "🗣️ Text-to-Speech (TTS)", "Edge-TTS (en-IN / hi-IN / en-US)", "#FAF5FF", "#9333EA")
 
-    # 3. AI Core (Speech, LLM, TTS)
-    ax.text(0.48, 0.78, "Gemini STT\n(gemini-2.5-flash)\n• Speech-to-Text\n• Language Detection",
-            ha="center", va="center", color="#EDE9FE", fontsize=9, bbox=ai_box, transform=ax.transAxes)
+    # 2. API Gateway & Controller Layer (Middle-Top)
+    draw_box(4.5, 5.1, 5.0, 1.0, "⚡ FastAPI REST API Gateway", "Endpoints: /call/text, /call/audio, /products, /leads, /appointments", "#FEF3C7", "#D97706")
 
-    ax.text(0.48, 0.60, "Autonomous AI Agent\n(Gemini 2.5 Flash / Demo)\n• Context Memory (10 turns)\n• Tool Calling & Sentiment\n• Lead Qualification Engine",
-            ha="center", va="center", color="#EDE9FE", fontsize=9, bbox=ai_box, transform=ax.transAxes)
+    # 3. Core AI & Reasoning Layer (Middle)
+    draw_box(0.8, 3.1, 3.6, 1.25, "📚 TF-IDF & NumPy RAG", "8 Knowledge Base Docs\nCosine Relevance Retrieval", "#F8FAFC", "#64748B")
+    draw_box(5.2, 3.1, 3.6, 1.25, "🤖 AI Sales Agent (Anya)", "Gemini 2.5 Flash LLM\n+ Context & 10-Turn Memory", "#EFF6FF", "#2563EB")
+    draw_box(9.6, 3.1, 3.6, 1.25, "🎯 Recommendation Engine", "data/products.csv Source of Truth\nBudget & Spec Matching", "#F0FDF4", "#16A34A")
 
-    ax.text(0.48, 0.42, "Edge-TTS Engine\n(Microsoft Neural Voices)\n• en-US-JennyNeural\n• hi-IN-SwaraNeural",
-            ha="center", va="center", color="#EDE9FE", fontsize=9, bbox=ai_box, transform=ax.transAxes)
+    # 4. Analytics & Validation Engines (Middle-Bottom)
+    draw_box(0.8, 1.4, 3.6, 1.1, "📊 Sentiment Engine", "Regex Word Boundary Tokenizer\nEscalation Alert Guard", "#FFF7ED", "#EA580C")
+    draw_box(5.2, 1.4, 3.6, 1.1, "🎯 BANT Qualification", "Pydantic Models • 0-100 Score\nHOT / WARM / COLD Bands", "#FDF2F8", "#DB2777")
+    draw_box(9.6, 1.4, 3.6, 1.1, "📅 Appointment Engine", "Conflict Prevention Lock\nRFC 5545 .ICS File Generator", "#ECFEFF", "#0891B2")
 
-    # 4. Knowledge Base & RAG
-    ax.text(0.72, 0.78, "Simple RAG Pipeline\n• company_info.txt\n• Gemini Embeddings\n• Cosine Similarity (Top-3)",
-            ha="center", va="center", color="#ECFDF5", fontsize=9, bbox=data_box, transform=ax.transAxes)
+    # 5. Persistence Layer (Bottom)
+    draw_box(3.5, 0.2, 7.0, 0.85, "🗄️ SQLite Database & CRM (electromart.db)", "Customers • Leads • Calls • Messages • Appointments • Call Summaries", "#F1F5F9", "#475569")
 
-    # 5. Database & Calendar
-    ax.text(0.72, 0.50, "SQLite Database\n(SQLAlchemy ORM)\n• Leads & Scores (0-100)\n• Calls & Latency\n• Double-booking Lock",
-            ha="center", va="center", color="#ECFDF5", fontsize=9, bbox=data_box, transform=ax.transAxes)
+    # Arrows connecting layers
+    def draw_arrow(x1, y1, x2, y2, label=""):
+        ax.annotate(
+            label, xy=(x2, y2), xytext=(x1, y1),
+            arrowprops=dict(arrowstyle="->", color="#475569", lw=1.3, mutation_scale=12),
+            ha="center", va="center", fontsize=7.5, color="#64748B"
+        )
 
-    # 6. CRM & Integrations
-    ax.text(0.90, 0.50, "CRM Webhook\n& .ics Invites\n• Mock CRM Receiver\n• HubSpot / Zoho ready\n• iCalendar file generator",
-            ha="center", va="center", color="#ECFDF5", fontsize=9, bbox=data_box, transform=ax.transAxes)
+    # Connections
+    draw_arrow(2.7, 6.7, 5.5, 6.1)
+    draw_arrow(7.0, 6.7, 7.0, 6.1)
+    draw_arrow(11.3, 6.7, 8.5, 6.1)
 
-    # 7. Production Scale-Up (Not Implemented / Future Scale)
-    ax.text(0.50, 0.16, "PRODUCTION SCALE-UP INFRASTRUCTURE (Proposed for 100,000 Concurrent Calls)\n"
-                        "• Redis Cache & Rate Limiting    • Celery / RabbitMQ Event Queue    • WebRTC / WebSocket Audio Streaming\n"
-                        "• Managed Vector DB (Qdrant/Pinecone)    • AWS RDS PostgreSQL + Read Replicas    • Prometheus/Grafana APM",
-            ha="center", va="center", color="#FEF3C7", fontsize=9.5, bbox=prod_box, transform=ax.transAxes)
+    draw_arrow(6.0, 5.1, 2.6, 4.35)
+    draw_arrow(7.0, 5.1, 7.0, 4.35)
+    draw_arrow(8.0, 5.1, 11.4, 4.35)
 
-    # Draw Arrows
-    arrow_props = dict(arrowstyle="->", color="#38BDF8", lw=2)
-    ax.annotate("", xy=(0.17, 0.70), xytext=(0.33, 0.70), arrowprops=dict(arrowstyle="<->", color="#38BDF8", lw=2), xycoords='axes fraction')
-    ax.annotate("", xy=(0.33, 0.72), xytext=(0.40, 0.78), arrowprops=arrow_props, xycoords='axes fraction')
-    ax.annotate("", xy=(0.40, 0.78), xytext=(0.40, 0.65), arrowprops=arrow_props, xycoords='axes fraction')
-    ax.annotate("", xy=(0.33, 0.60), xytext=(0.38, 0.60), arrowprops=arrow_props, xycoords='axes fraction')
-    ax.annotate("", xy=(0.58, 0.60), xytext=(0.64, 0.76), arrowprops=dict(arrowstyle="<->", color="#8B5CF6", lw=2), xycoords='axes fraction')
-    ax.annotate("", xy=(0.58, 0.58), xytext=(0.64, 0.50), arrowprops=arrow_props, xycoords='axes fraction')
-    ax.annotate("", xy=(0.48, 0.52), xytext=(0.48, 0.47), arrowprops=arrow_props, xycoords='axes fraction')
-    ax.annotate("", xy=(0.40, 0.42), xytext=(0.20, 0.65), arrowprops=arrow_props, xycoords='axes fraction')
-    ax.annotate("", xy=(0.80, 0.50), xytext=(0.83, 0.50), arrowprops=arrow_props, xycoords='axes fraction')
+    draw_arrow(4.4, 3.7, 5.2, 3.7)
+    draw_arrow(9.6, 3.7, 8.8, 3.7)
 
-    # Legend at bottom
-    ax.text(0.10, 0.04, " Blue/Purple: Implemented MVP Core Pipeline", color="#38BDF8", fontsize=9, transform=ax.transAxes)
-    ax.text(0.55, 0.04, " Orange (Dashed): Production Scale-Up (Design Plan for 100k Users)", color="#F59E0B", fontsize=9, transform=ax.transAxes)
+    draw_arrow(2.6, 3.1, 2.6, 2.5)
+    draw_arrow(7.0, 3.1, 7.0, 2.5)
+    draw_arrow(11.4, 3.1, 11.4, 2.5)
 
-    ax.axis('off')
+    draw_arrow(2.6, 1.4, 5.5, 1.05)
+    draw_arrow(7.0, 1.4, 7.0, 1.05)
+    draw_arrow(11.4, 1.4, 8.5, 1.05)
+
     plt.tight_layout()
-    plt.savefig(output_path, facecolor=fig.get_facecolor(), edgecolor='none')
+    plt.savefig(OUTPUT_PNG, bbox_inches="tight", dpi=300)
     plt.close()
-    print(f"Architecture diagram generated: {output_path}")
+    print(f"Architecture diagram saved to {OUTPUT_PNG}")
 
 
 if __name__ == "__main__":
-    generate_architecture_diagram()
+    draw_architecture()

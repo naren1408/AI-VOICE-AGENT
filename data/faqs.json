@@ -1,0 +1,152 @@
+[
+  {
+    "faq_id": "FAQ-01",
+    "category": "Warranty",
+    "question": "What is the warranty period on laptops sold at ElectroMart India?",
+    "answer": "All laptops come with an official manufacturer warranty ranging from 1 to 3 years. We also offer ElectroMart Extended Care providing an additional 1 or 2 years of coverage."
+  },
+  {
+    "faq_id": "FAQ-02",
+    "category": "Returns",
+    "question": "What is the replacement and return policy?",
+    "answer": "We offer a 7-day hassle-free replacement policy for defective or damaged electronics. The product must have original box, accessories, and invoice."
+  },
+  {
+    "faq_id": "FAQ-03",
+    "category": "Payment",
+    "question": "What payment methods do you accept?",
+    "answer": "We accept UPI (Google Pay, PhonePe, Paytm), Credit & Debit cards (Visa, MasterCard, RuPay), Net Banking, and Cash on Delivery up to \u20b915,000."
+  },
+  {
+    "faq_id": "FAQ-04",
+    "category": "Offers",
+    "question": "Are there any No-Cost EMI options available?",
+    "answer": "Yes! We provide 0% interest No-Cost EMI for 3, 6, 9, and 12 months on all purchases above \u20b920,000 with major credit cards and Bajaj Finserv."
+  },
+  {
+    "faq_id": "FAQ-05",
+    "category": "Delivery",
+    "question": "How long does standard delivery take?",
+    "answer": "Standard metro delivery takes 24 to 48 hours. Tier-2 and Tier-3 cities receive delivery within 3 to 5 business days with live GPS tracking."
+  },
+  {
+    "faq_id": "FAQ-06",
+    "category": "Store Visit",
+    "question": "Can I test products hands-on in the physical store?",
+    "answer": "Yes! You can book an appointment with our AI agent to visit your nearest ElectroMart showroom for a dedicated hands-on demo with an expert."
+  },
+  {
+    "faq_id": "FAQ-07",
+    "category": "Programming",
+    "question": "Which laptop is recommended for coding and software development?",
+    "answer": "The CodeMaster Pro 15 (\u20b964,999) and DevForge Extreme 16 (\u20b979,999) are top picks. Both offer fast H-series processors, 16GB DDR5 RAM, and high-resolution displays."
+  },
+  {
+    "faq_id": "FAQ-08",
+    "category": "Students",
+    "question": "What is the best budget laptop for students?",
+    "answer": "The VoltBook Student 14 at \u20b934,999 with 8GB RAM, 256GB SSD, and 8 hours of battery life is our most popular student choice."
+  },
+  {
+    "faq_id": "FAQ-09",
+    "category": "Exchange",
+    "question": "Do you offer exchange value on old phones or laptops?",
+    "answer": "Yes, our Trade-In program offers up to \u20b95,000 extra exchange bonus over market valuation on working old devices with valid IMEI/serial numbers."
+  },
+  {
+    "faq_id": "FAQ-10",
+    "category": "Battery",
+    "question": "Which smartphone has the longest battery life?",
+    "answer": "The Volt PowerMax 5G (\u20b913,999) features a massive 6000mAh monster battery that lasts up to 2.5 days on normal usage."
+  },
+  {
+    "faq_id": "FAQ-11",
+    "category": "Gaming",
+    "question": "What gaming laptop under \u20b91,00,000 is available?",
+    "answer": "The CyberPulse G15 at \u20b994,999 features an AMD Ryzen 7 7840HS, 16GB DDR5, and NVIDIA RTX 4060 8GB GPU with a 165Hz QHD panel."
+  },
+  {
+    "faq_id": "FAQ-12",
+    "category": "Tablets",
+    "question": "Does the tablet come with a stylus pen included?",
+    "answer": "The Zenith Pad Creator 12 includes the magnetic stylus in the box. For the NovaPad Air 11, the stylus is sold separately or at a discount bundle."
+  },
+  {
+    "faq_id": "FAQ-13",
+    "category": "Business Hours",
+    "question": "What are ElectroMart showroom hours?",
+    "answer": "Showrooms are open Monday through Sunday from 10:00 AM to 08:30 PM. Sales consultations can be booked anytime."
+  },
+  {
+    "faq_id": "FAQ-14",
+    "category": "Accessories",
+    "question": "Does the VoltCharge 100W GaN charger support laptops?",
+    "answer": "Yes! Its USB-C Power Delivery 3.0 ports output up to 100W, sufficient to fast-charge MacBooks, Dell, HP, Lenovo, and NovaCorp laptops."
+  },
+  {
+    "faq_id": "FAQ-15",
+    "category": "RAM Upgrade",
+    "question": "Can I upgrade RAM on the laptops after purchase?",
+    "answer": "The CodeMaster Pro 15, DevForge Extreme 16, and ZenithBook Air 15 have upgradeable RAM slots without voiding the warranty."
+  },
+  {
+    "faq_id": "FAQ-16",
+    "category": "Offers",
+    "question": "Is there a student discount available?",
+    "answer": "Yes! Our Student Tech Pass offer gives a flat \u20b92,500 instant discount on laptops above \u20b930,000 with a verified student ID."
+  },
+  {
+    "faq_id": "FAQ-17",
+    "category": "Cancellation",
+    "question": "Can I cancel an order before dispatch?",
+    "answer": "Yes, orders can be cancelled with 100% full refund through the customer portal or helpline before shipping."
+  },
+  {
+    "faq_id": "FAQ-18",
+    "category": "Photography",
+    "question": "Which smartphone has optical image stabilization (OIS)?",
+    "answer": "Both the Pulse Velocity 5G (\u20b916,999), Zenith CamPro 5G (\u20b934,999), and Aura Flagship X (\u20b964,999) feature hardware OIS."
+  },
+  {
+    "faq_id": "FAQ-19",
+    "category": "Foldables",
+    "question": "What warranty does the Titan Fold Z have on its folding screen?",
+    "answer": "The Titan Fold Z includes 2 years of VIP screen protection with a 1-time free inner screen replacement."
+  },
+  {
+    "faq_id": "FAQ-20",
+    "category": "Support",
+    "question": "How do I reach customer support?",
+    "answer": "Contact support via toll-free 1800-ELE-MART (1800-353-6278) or email support@electromart-india.example.com from 9 AM to 8 PM daily."
+  },
+  {
+    "faq_id": "FAQ-21",
+    "category": "Tablets",
+    "question": "Can tablets be connected to external keyboards and monitors?",
+    "answer": "Yes, Aura Slate Pro 13 and Zenith Pad Creator 12 support Type-C display output and magnetic/Bluetooth keyboard accessories."
+  },
+  {
+    "faq_id": "FAQ-22",
+    "category": "Delivery",
+    "question": "Do you offer open-box delivery?",
+    "answer": "Yes, open-box inspection is available across 15 major metro cities for all electronics priced above \u20b920,000."
+  },
+  {
+    "faq_id": "FAQ-23",
+    "category": "Headphones",
+    "question": "How effective is the ANC on Aura SoundBeats?",
+    "answer": "Aura SoundBeats provides hybrid active noise cancellation up to 38dB, blocking low-frequency engine and office chatter."
+  },
+  {
+    "faq_id": "FAQ-24",
+    "category": "GST",
+    "question": "Can I get a GST business tax invoice for input credit?",
+    "answer": "Yes, simply enter your company name and 15-digit GSTIN during checkout or consultation to receive a compliant GST tax invoice."
+  },
+  {
+    "faq_id": "FAQ-25",
+    "category": "Appointment",
+    "question": "Can I reschedule my booked store appointment?",
+    "answer": "Yes, you can easily reschedule anytime by providing your appointment ID or email to our sales agent or helpline."
+  }
+]

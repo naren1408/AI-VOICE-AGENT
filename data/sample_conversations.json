@@ -1,0 +1,301 @@
+[
+  {
+    "conversation_id": "CONV-001",
+    "customer_id": "CUST-002",
+    "customer_name": "Priya Patel",
+    "category": "Laptops",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "I am looking for a laptop under \u20b970,000."
+      },
+      {
+        "speaker": "agent",
+        "text": "Sure! What will you mainly use the laptop for?"
+      },
+      {
+        "speaker": "customer",
+        "text": "Programming and multitasking."
+      },
+      {
+        "speaker": "agent",
+        "text": "Do you have any preferred RAM or processor requirements?"
+      },
+      {
+        "speaker": "customer",
+        "text": "At least 16 GB RAM and a good processor."
+      },
+      {
+        "speaker": "agent",
+        "text": "Based on your requirements, here are three matching options: CodeMaster Pro 15 (\u20b964,999, i5-13500H, 16GB DDR5), ZenithBook Air 15 (\u20b948,999, Ryzen 5, 16GB), and DevForge Extreme 16 (\u20b979,999)."
+      },
+      {
+        "speaker": "customer",
+        "text": "Which one is best for me?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Based on your budget and programming requirements, I recommend the CodeMaster Pro 15 (\u20b964,999) because its high-performance 13th Gen Intel H-series CPU and 16GB DDR5 RAM handle code compilation and IDEs effortlessly."
+      },
+      {
+        "speaker": "customer",
+        "text": "Can I visit your store tomorrow?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Certainly! What time would be convenient for you?"
+      },
+      {
+        "speaker": "customer",
+        "text": "4 PM."
+      },
+      {
+        "speaker": "agent",
+        "text": "Let me check availability and confirm your appointment. Confirmed for tomorrow at 4:00 PM at our showroom!"
+      }
+    ],
+    "outcome": "Appointment Booked (APT-501)",
+    "recommended_product": "CodeMaster Pro 15",
+    "lead_score": 95,
+    "lead_status": "HOT"
+  },
+  {
+    "conversation_id": "CONV-002",
+    "customer_id": "CUST-001",
+    "category": "Laptops",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "I need a budget laptop for college studies around 35k."
+      },
+      {
+        "speaker": "agent",
+        "text": "Hello! The VoltBook Student 14 is perfect for college coursework at \u20b934,999. It features an Intel Core i3 12th Gen, 8GB RAM, and 256GB SSD with 8 hours battery life."
+      },
+      {
+        "speaker": "customer",
+        "text": "Are there student discounts?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Yes! Our Student Tech Pass offer gives you an instant \u20b92,500 discount with your student ID, bringing the price down to \u20b932,499."
+      },
+      {
+        "speaker": "customer",
+        "text": "Great, I will visit the showroom this weekend."
+      }
+    ],
+    "outcome": "Showroom Lead Created",
+    "recommended_product": "VoltBook Student 14",
+    "lead_score": 75,
+    "lead_status": "HOT"
+  },
+  {
+    "conversation_id": "CONV-003",
+    "customer_id": "CUST-013",
+    "category": "Laptops",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "Looking for a heavy gaming laptop with RTX graphics under 1 lakh."
+      },
+      {
+        "speaker": "agent",
+        "text": "I recommend the CyberPulse G15 at \u20b994,999. It is equipped with AMD Ryzen 7 7840HS, 16GB DDR5, and NVIDIA RTX 4060 8GB graphics with a 165Hz QHD screen."
+      },
+      {
+        "speaker": "customer",
+        "text": "Does it have heating issues?"
+      },
+      {
+        "speaker": "agent",
+        "text": "The CyberPulse G15 features dual fans with liquid metal thermal compound, keeping sustained CPU temperatures below 82 degrees during AAA gaming."
+      }
+    ],
+    "outcome": "Warm Gaming Enquiry",
+    "recommended_product": "CyberPulse G15",
+    "lead_score": 80,
+    "lead_status": "HOT"
+  },
+  {
+    "conversation_id": "CONV-004",
+    "customer_id": "CUST-004",
+    "category": "Tablets",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "Need a tablet for digital sketching and illustration under 40k."
+      },
+      {
+        "speaker": "agent",
+        "text": "The Zenith Pad Creator 12 at \u20b938,999 is custom-built for digital art, featuring a 144Hz 3K display, Dimensity 9000, and magnetic stylus with 4096 pressure levels."
+      },
+      {
+        "speaker": "customer",
+        "text": "Can I test the pen in store?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Yes! I can book a hands-on slot for you at our Kolkata store."
+      }
+    ],
+    "outcome": "Stylus Consultation Booked",
+    "recommended_product": "Zenith Pad Creator 12",
+    "lead_score": 65,
+    "lead_status": "WARM"
+  },
+  {
+    "conversation_id": "CONV-005",
+    "customer_id": "CUST-005",
+    "category": "Smartphones",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "What is your best premium smartphone for executive use?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Our flagship is the Aura Flagship X (\u20b964,999) with Snapdragon 8 Gen 3, titanium body, IP68 water resistance, and 100x zoom periscope camera."
+      },
+      {
+        "speaker": "customer",
+        "text": "Do you offer corporate GST invoices?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Yes, we provide full GST input tax invoices for all corporate and business purchases."
+      }
+    ],
+    "outcome": "Corporate Sales Lead",
+    "recommended_product": "Aura Flagship X",
+    "lead_score": 60,
+    "lead_status": "WARM"
+  },
+  {
+    "conversation_id": "CONV-006",
+    "customer_id": "CUST-008",
+    "category": "Smartphones",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "I want a phone with great camera under 35,000 for reels."
+      },
+      {
+        "speaker": "agent",
+        "text": "The Zenith CamPro 5G at \u20b934,999 is exceptional for video and reels. It has triple 50MP Sony sensors with Optical Image Stabilization and 4K 60fps recording."
+      },
+      {
+        "speaker": "customer",
+        "text": "How fast is the charging?"
+      },
+      {
+        "speaker": "agent",
+        "text": "It includes 67W SuperVOOC charging, reaching 100% battery in just 38 minutes."
+      }
+    ],
+    "outcome": "Camera Consultation",
+    "recommended_product": "Zenith CamPro 5G",
+    "lead_score": 55,
+    "lead_status": "WARM"
+  },
+  {
+    "conversation_id": "CONV-007",
+    "customer_id": "CUST-011",
+    "category": "Accessories",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "Do you have mechanical keyboards for programming?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Yes! The MechKeys RGB Wireless Keyboard (\u20b93,999) has pre-lubed red linear switches, 75% compact layout, and pairs with up to 3 devices."
+      },
+      {
+        "speaker": "customer",
+        "text": "Is there an offer if I buy a mouse too?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Yes! Our Work-From-Home Duo offer gives you \u20b91,000 off when bundled with the PrecisionGlide Ergonomic Mouse."
+      }
+    ],
+    "outcome": "Accessory Bundle Lead",
+    "recommended_product": "MechKeys RGB Wireless Mechanical Keyboard",
+    "lead_score": 50,
+    "lead_status": "WARM"
+  },
+  {
+    "conversation_id": "CONV-008",
+    "customer_id": "CUST-015",
+    "category": "Laptops",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "What are your general laptop price ranges?"
+      },
+      {
+        "speaker": "agent",
+        "text": "Our laptops range from \u20b924,999 for the EcoBook Lite up to \u20b91,49,999 for the StudioCraft Pro 16. Most student and office laptops fall between \u20b935,000 and \u20b965,000."
+      },
+      {
+        "speaker": "customer",
+        "text": "Okay, I will think about it next year."
+      }
+    ],
+    "outcome": "Cold Info Request",
+    "recommended_product": "VoltBook Student 14",
+    "lead_score": 25,
+    "lead_status": "COLD"
+  },
+  {
+    "conversation_id": "CONV-009",
+    "customer_id": "CUST-002",
+    "category": "Hindi Consultation",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "\u092e\u0941\u091d\u0947 50,000 \u0915\u0947 \u0905\u0902\u0926\u0930 \u0915\u094b\u0921\u093f\u0902\u0917 \u0915\u0947 \u0932\u093f\u090f \u090f\u0915 \u0905\u091a\u094d\u091b\u093e \u0932\u0948\u092a\u091f\u0949\u092a \u091a\u093e\u0939\u093f\u090f\u0964"
+      },
+      {
+        "speaker": "agent",
+        "text": "\u0928\u092e\u0938\u094d\u0924\u0947! 50,000 \u0915\u0947 \u092c\u091c\u091f \u092e\u0947\u0902 ZenithBook Air 15 (\u20b948,999) \u0938\u092c\u0938\u0947 \u092c\u0922\u093c\u093f\u092f\u093e \u0935\u093f\u0915\u0932\u094d\u092a \u0939\u0948\u0964 \u0907\u0938\u092e\u0947\u0902 AMD Ryzen 5 \u092a\u094d\u0930\u094b\u0938\u0947\u0938\u0930 \u0914\u0930 16GB RAM \u0939\u0948 \u091c\u094b \u0915\u094b\u0921\u093f\u0902\u0917 \u0915\u0947 \u0932\u093f\u090f \u092c\u0939\u0941\u0924 \u0909\u092a\u092f\u0941\u0915\u094d\u0924 \u0939\u0948\u0964"
+      },
+      {
+        "speaker": "customer",
+        "text": "\u0915\u094d\u092f\u093e \u0907\u0938 \u092a\u0930 \u0935\u093e\u0930\u0902\u091f\u0940 \u092e\u093f\u0932\u0947\u0917\u0940?"
+      },
+      {
+        "speaker": "agent",
+        "text": "\u0939\u093e\u0901, \u0907\u0938 \u092a\u0930 1 \u0938\u093e\u0932 \u0915\u0940 \u0906\u0927\u093f\u0915\u093e\u0930\u093f\u0915 \u0935\u093e\u0930\u0902\u091f\u0940 \u0914\u0930 7 \u0926\u093f\u0928 \u0915\u0940 \u0930\u093f\u092a\u094d\u0932\u0947\u0938\u092e\u0947\u0902\u091f \u092a\u0949\u0932\u093f\u0938\u0940 \u0909\u092a\u0932\u092c\u094d\u0927 \u0939\u0948\u0964"
+      }
+    ],
+    "outcome": "Hindi Consultation Completed",
+    "recommended_product": "ZenithBook Air 15",
+    "lead_score": 85,
+    "lead_status": "HOT"
+  },
+  {
+    "conversation_id": "CONV-010",
+    "customer_id": "CUST-007",
+    "category": "Laptops",
+    "turns": [
+      {
+        "speaker": "customer",
+        "text": "Compare CodeMaster Pro 15 and DevForge Extreme 16 please."
+      },
+      {
+        "speaker": "agent",
+        "text": "Certainly! CodeMaster Pro 15 (\u20b964,999) has Intel i5 13500H with Iris Xe graphics, ideal for standard software dev. DevForge Extreme 16 (\u20b979,999) adds an RTX 3050 GPU, Ryzen 7, and 1TB SSD, making it better for machine learning, Docker, and Android emulators."
+      },
+      {
+        "speaker": "customer",
+        "text": "DevForge looks worth the extra \u20b915,000. Let me book a callback."
+      }
+    ],
+    "outcome": "Callback Requested",
+    "recommended_product": "DevForge Extreme 16",
+    "lead_score": 85,
+    "lead_status": "HOT"
+  }
+]

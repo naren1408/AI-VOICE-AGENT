@@ -1,53 +1,55 @@
+"""
+ElectroMart India — Speech to Text
+Uses Google Gemini API (current google-genai SDK) when configured.
+Falls back gracefully when running offline in Demo Mode.
+"""
 import os
-from typing import Tuple
-
-# Supported languages
-SUPPORTED_LANGUAGES = ["en", "hi"]
+from typing import Tuple, Optional
+from backend.config import GEMINI_MODEL_CHAT
 
 
-def detect_language(text: str) -> str:
-    """Detect whether language is Hindi or English based on Devanagari script or common transliteration."""
-    # Check for Devanagari Unicode block (\u0900 to \u097F)
-    for ch in text:
-        if "\u0900" <= ch <= "\u097F":
-            return "hi"
-
-    # Common Hindi transliterations in sales inquiries
-    hindi_keywords = ["namaste", "bataiye", "kya", "daam", "kitna", "keemat", "shukriya", "dhanyawad", "badiya", "hai", "mujhe", "chahiye"]
-    text_lower = text.lower()
-    if any(re_match in text_lower.split() for re_match in hindi_keywords):
-        return "hi"
-
-    return "en"
-
-
-def transcribe_audio_gemini(audio_path: str, client=None, model_name: str = "gemini-2.5-flash") -> Tuple[str, str]:
-    """Transcribe audio using the Gemini API. Returns (transcribed_text, language_code)."""
-    if not os.path.exists(audio_path):
-        return "No audio file provided.", "en"
-
-    if client is None:
-        return "Audio transcription requires a valid GEMINI_API_KEY. Please use text input in Demo Mode.", "en"
+def transcribe_audio_gemini(audio_path: str, client=None) -> Tuple[str, str]:
+    """
+    Transcribe audio file using Google Gemini API.
+    Returns (transcript_text, detected_language).
+    """
+    if not client or not os.path.exists(audio_path):
+        return "", "en"
 
     try:
+        from google.genai import types
+
         with open(audio_path, "rb") as f:
             audio_bytes = f.read()
 
+        if len(audio_bytes) < 100:
+            return "", "en"
+
         prompt = (
-            "Listen carefully to this audio recording from an inbound sales inquiry. "
-            "Transcribe the spoken audio verbatim in its original language (English or Hindi). "
-            "Output ONLY the plain transcription text without any additional commentary."
+            "Listen to this customer voice recording. Transcribe the exact words spoken. "
+            "Also identify if the speech is in English ('en') or Hindi ('hi'). "
+            "Output strictly formatted as: [LANG: en|hi] <transcription>"
         )
 
         response = client.models.generate_content(
-            model=model_name,
+            model=GEMINI_MODEL_CHAT,
             contents=[
-                prompt,
-                {"mime_type": "audio/wav", "data": audio_bytes}
+                types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"),
+                prompt
             ]
         )
-        transcript = response.text.strip()
-        lang = detect_language(transcript)
-        return transcript, lang
-    except Exception as err:
-        return f"Audio transcription error: {str(err)}", "en"
+
+        text = response.text.strip()
+        lang = "en"
+        if text.startswith("[LANG:"):
+            parts = text.split("]", 1)
+            lang_code = parts[0].replace("[LANG:", "").strip().lower()
+            if lang_code in ["en", "hi"]:
+                lang = lang_code
+            text = parts[1].strip() if len(parts) > 1 else text
+
+        return text, lang
+
+    except Exception as e:
+        print(f"Gemini STT notice: {e}")
+        return f"Audio transcription error: {str(e)[:60]}", "en"

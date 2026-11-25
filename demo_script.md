@@ -1,95 +1,92 @@
-# CloudScale AI: Autonomous Sales Voice Agent Demo Script
+# ElectroMart India — Live Demo Script
 
-This script walks through the **13-step Golden Scenario (Section 20-C)**. It works identically in both **Demo Mode** (zero API keys) and **Gemini Mode** (live Google GenAI SDK).
-
----
-
-## Pre-Demo Checklist
-1. Start the FastAPI backend:
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
-2. In a separate terminal, launch the Streamlit interface:
-   ```bash
-   streamlit run app.py
-   ```
-3. Verify the **Demo Mode** badge is visible in the sidebar (or **Gemini Mode** if you added a key).
+Use this script during your placement interview to demonstrate the complete sales pipeline: product inquiry, recommendation, comparison, lead qualification, and appointment booking.
 
 ---
 
-## Golden Scenario Utterances (Step-by-Step)
+## 💻 English Scenario (Programming Laptop & Store Visit)
 
-### Turn 1: Inquire About Pricing (RAG Knowledge Base Test)
-* **What you say / type:**
-  > "Hi, can you explain your pricing tiers and how much it costs?"
-* **Expected Agent Response:**
-  > Retrieves pricing details directly from `company_info.txt`. Explains Starter ($499/mo), Professional ($1,499/mo), and Enterprise ($4,500/mo). Asks about your current infrastructure size.
-* **UI Verification:**
-  - Notice the **"Knowledge Base Sources Used"** expander populates with retrieved chunks.
-  - Sentiment shows as neutral/positive.
+### Step 1: Initial Requirement & Budget
+**You (Customer):**
+> *"I am looking for a laptop under ₹70,000."*
 
----
-
-### Turn 2: Describe Scale & Pain Points (Lead Qualification Trigger)
-* **What you say / type:**
-  > "We run about 180 Kubernetes nodes on AWS and our compute bill has too much waste."
-* **Expected Agent Response:**
-  > Acknowledges the infrastructure scale and maps it to the **Professional Tier** (handles up to 250 nodes). Inquires about your implementation budget and timeline.
-* **UI Verification:**
-  - Need field updates: "Cloud compute optimization & FinOps cost reduction".
+**Agent (Anya):**
+> *"Sure! What will you mainly use the laptop for?"*
+*(Lead status updates to **COLD**; budget recognized as ₹70,000).*
 
 ---
 
-### Turn 3: Purchase Budget & Timeline (Score Increment)
-* **What you say / type:**
-  > "Our budget is $1,499 per month and we need to deploy this quarter."
-* **Expected Agent Response:**
-  > Confirms the budget matches the Professional plan and deployment window. Requests contact details to set up a personalized evaluation.
-* **UI Verification:**
-  - Budget extracted: `$1,499`.
-  - Timeline extracted: `this quarter`.
-  - Lead Score jumps to **WARM (50/100)**.
+### Step 2: Use Case
+**You (Customer):**
+> *"Programming and multitasking."*
+
+**Agent (Anya):**
+> *"Do you have any preferred RAM or processor requirements?"*
 
 ---
 
-### Turn 4: Contact Information & Authority (Hot Lead Conversion)
-* **What you say / type:**
-  > "I am Sarah Connor, VP of Engineering at Cyberdyne. My email is sarah@cyberdyne.io and I make the technical decisions."
-* **Expected Agent Response:**
-  > Greets Sarah, verifies decision-maker authority, and immediately offers to book a tailored 30-minute technical demonstration.
-* **UI Verification:**
-  - Name: `Sarah`, Company: `Cyberdyne`, Email: `sarah@cyberdyne.io`, Decision Maker: `Yes`.
-  - Lead Score jumps to **🔥 HOT LEAD (100/100)** with red badge and progress bar.
+### Step 3: Specifications & Recommendations
+**You (Customer):**
+> *"At least 16 GB RAM and a good processor."*
+
+**Agent (Anya):**
+> *"Based on your requirements, here are three matching options from our catalog:*
+> *1. **CodeMaster Pro 15** (₹64,999) — 13th Gen Intel Core i5, 16GB DDR5 RAM, 2K display.*
+> *2. **ZenithBook Air 15** (₹48,999) — AMD Ryzen 5, 16GB RAM, budget-friendly.*
+> *3. **DevForge Extreme 16** (₹79,999) — AMD Ryzen 7 with dedicated RTX 3050 GPU for heavy Docker & ML."*
+*(Notice the **Recommended Products** card dynamically populates in the right column).*
 
 ---
 
-### Turn 5: Multilingual Inbound Inquiry (Hindi Turn)
-* **What you say / type:**
-  > "नमस्ते, क्या आप मुझे इसके फीचर्स और डेमो के बारे में बता सकते हैं?"
-* **Expected Agent Response:**
-  > Responds in natural Hindi using `hi-IN-SwaraNeural` voice via Edge-TTS:
-  > *"नमस्ते! CloudScale AI आपके क्लाउड खर्च को 45% तक कम करने में मदद करता है। हमारा स्टार्टर प्लान $499 प्रति माह से शुरू होता है। क्या आप 30 मिनट का डेमो देखना चाहेंगे?"*
-* **UI Verification:**
-  - Spoken Hindi audio stream plays in the UI.
+### Step 4: Comparison & Consultation
+**You (Customer):**
+> *"Which one is best for me?"*
+
+**Agent (Anya):**
+> *"Based on your budget and programming requirements, I recommend the **CodeMaster Pro 15** (₹64,999) because its high-performance 13th Gen Intel H-series processor and 16GB DDR5 memory handle multiple IDEs, browser tabs, and local servers effortlessly without lag."*
 
 ---
 
-### Turn 6: Book Demo Appointment (Transactional Slot Lock)
-* **What you say / type:**
-  > "Yes, please book a demo for tomorrow 4pm."
-* **Expected Agent Response:**
-  > Confirms the demo for tomorrow at 4:00 PM. Confirms calendar invite dispatched to `sarah@cyberdyne.io`.
-* **UI Verification:**
-  - Blue download button appears: **"📅 Download Demo Calendar Invite (.ics)"**.
-  - Check Tab 2 ("Leads & Appointments"): The appointment is locked in SQLite.
-  - Attempting to book the same slot again will reject with a conflict alert.
+### Step 5: Store Visit & Appointment Booking
+**You (Customer):**
+> *"Can I visit your store tomorrow?"*
+
+**Agent (Anya):**
+> *"Certainly! What time would be convenient for you?"*
+
+**You (Customer):**
+> *"4 PM. My name is Priya Patel, email is priya.patel@example.com, and phone is +91-98791-22334."*
+
+**Agent (Anya):**
+> *"Let me check availability and confirm your appointment. Confirmed for tomorrow at 4:00 PM at our showroom! [System: Store demo confirmed for 29 November at 04:00 PM. Calendar invite ready.]"*
+*(Lead Score jumps to **HOT (95/100)**; green appointment confirmation banner appears; **Download .ICS Invite** button becomes clickable).*
 
 ---
 
-### Turn 7: End Call & Summarize (Post-Call Intelligence)
-* **Action:**
-  - Click the **"⏹️ End Call & Summarize"** button in the sidebar.
-* **Expected UI Output:**
-  - Executive Summary, Key Points, Objections, and Next Steps are displayed.
-  - CRM Webhook event is sent.
-  - Switch to **"📊 Insights"** Tab: Total calls, demo conversion %, lead score averages, and sentiment charts reflect Sarah's call.
+### Step 6: End Call & Review CRM Summary
+1. Click **"⏹️ End Call & Generate Summary"**.
+2. Review the structured executive summary card:
+   - Customer: Priya Patel
+   - Requirements: Programming and multitasking
+   - Recommended Products: CodeMaster Pro 15
+   - Lead Status: HOT (95/100)
+   - Appointment: Store Visit confirmed
+   - Recommended Next Action: Priority follow-up within 24 hours.
+3. Switch to **Tab 2: Products, Leads & Appointments** to see the newly booked appointment and updated lead in the SQLite CRM!
+4. Switch to **Tab 3: Sales Insights** to view updated aggregate analytics!
+
+---
+
+## 🇮🇳 Hindi Scenario (हिंदी में बातचीत)
+
+**Customer:**
+> *"नमस्ते, मुझे 50,000 के अंदर कोडिंग के लिए एक अच्छा लैपटॉप चाहिए।"*
+
+**Agent (Anya):**
+> *"नमस्ते! 50,000 के बजट में ZenithBook Air 15 (₹48,999) सबसे बढ़िया विकल्प है। इसमें AMD Ryzen 5 प्रोसेसर और 16GB RAM है जो कोडिंग और मल्टीटास्किंग के लिए बहुत उपयुक्त है। क्या आप इस पर छात्र छूट या लाइव डेमो के बारे में जानना चाहते हैं?"*
+
+**Customer:**
+> *"क्या इस पर वारंटी मिलेगी?"*
+
+**Agent (Anya):**
+> *"हाँ, इस पर 1 साल की आधिकारिक ब्रांड वारंटी और 7 दिन की रिप्लेसमेंट पॉलिसी उपलब्ध है। क्या आप हमारे शोरूम में लाइव डेमो देखना चाहेंगे?"*

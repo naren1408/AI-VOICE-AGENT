@@ -1,110 +1,152 @@
+"""
+ElectroMart India — Lead Qualification Engine
+Extracts BANT criteria from conversation text, calculates 0-100 score,
+and classifies into HOT (70-100), WARM (40-69), and COLD (0-39).
+"""
 import re
-from typing import Dict, Any
+from typing import Dict, Tuple, Optional
 from pydantic import BaseModel, Field
 
-# --- LEAD SCORING WEIGHTS (Single dictionary for live-coding clarity) ---
+# --- SCORING WEIGHTS (Exact specification from prompt) ---
+# Keep in one dictionary for 1-minute live interview explanation
 LEAD_SCORING_WEIGHTS = {
-    "budget_present": 25,          # Customer shared explicit budget or tier preference
-    "timeline_urgent": 25,         # Buying timeline within 3-6 months or immediate
-    "decision_maker": 25,          # User confirms they have decision or authority
-    "need_clarity": 15,            # Specific pain point mentioned (cloud cost, FinOps, kubernetes)
-    "contact_info_present": 10     # Valid email or phone provided
+    "clear_requirement": 20,   # Customer expressed a clear product need / use case
+    "budget_specified": 20,    # Customer specified an explicit budget or price range
+    "urgent_timeline": 25,     # Purchase timeline within 30 days (immediate, this week, soon)
+    "contact_info": 15,        # Captured phone number or email address
+    "strong_intent": 20        # Expressed strong purchase intent (book visit, buy, store demo)
 }
 
 HOT_THRESHOLD = 70
 WARM_THRESHOLD = 40
 
+TIMELINE_30_DAYS_KEYWORDS = [
+    "today", "tomorrow", "immediate", "asap", "urgent", "this week", "next week",
+    "within 7 days", "within 15 days", "this month", "within 30 days", "soon", "now"
+]
 
-class LeadQualificationData(BaseModel):
-    """Pydantic model for validated lead fields."""
-    name: str = ""
-    email: str = ""
-    phone: str = ""
-    company: str = ""
-    need: str = ""
-    budget: str = ""
-    timeline: str = ""
-    is_decision_maker: bool = False
+PURCHASE_INTENT_KEYWORDS = [
+    "visit", "book", "demo", "buy", "purchase", "order", "call me", "appointment",
+    "finalize", "ready", "interested in buying", "store", "callback", "kharidna"
+]
 
 
-def calculate_lead_score(lead: LeadQualificationData) -> int:
-    """Calculate 0-100 score based on explicit rule weights."""
-    score = 0
-
-    # Budget score (+25)
-    if lead.budget and len(lead.budget.strip()) > 1 and "not" not in lead.budget.lower():
-        score += LEAD_SCORING_WEIGHTS["budget_present"]
-
-    # Timeline score (+25)
-    urgent_keywords = ["immediate", "now", "month", "quarter", "q1", "q2", "q3", "q4", "soon", "urgent", "202"]
-    if lead.timeline and any(kw in lead.timeline.lower() for kw in urgent_keywords):
-        score += LEAD_SCORING_WEIGHTS["timeline_urgent"]
-
-    # Decision maker (+25)
-    if lead.is_decision_maker:
-        score += LEAD_SCORING_WEIGHTS["decision_maker"]
-
-    # Need clarity (+15)
-    if lead.need and len(lead.need.strip()) > 5:
-        score += LEAD_SCORING_WEIGHTS["need_clarity"]
-
-    # Contact info (+10)
-    if (lead.email and "@" in lead.email) or (lead.phone and len(lead.phone.strip()) >= 8):
-        score += LEAD_SCORING_WEIGHTS["contact_info_present"]
-
-    return min(100, max(0, score))
+class ExtractedLead(BaseModel):
+    """Pydantic model for structured lead data validation."""
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    city: Optional[str] = None
+    interested_category: Optional[str] = None
+    budget: Optional[str] = None
+    requirement: Optional[str] = None
+    purchase_timeline: Optional[str] = None
+    purchase_intent: Optional[str] = "Exploring"
+    score: int = Field(default=0, ge=0, le=100)
+    status: str = Field(default="COLD")
+    score_breakdown: Dict[str, int] = Field(default_factory=dict)
 
 
-def get_qualification_status(score: int) -> str:
-    """Categorize lead as HOT, WARM, or COLD."""
-    if score >= HOT_THRESHOLD:
-        return "HOT"
-    if score >= WARM_THRESHOLD:
-        return "WARM"
-    return "COLD"
+def extract_lead_from_conversation(text: str) -> ExtractedLead:
+    """Extract lead attributes from multi-turn dialogue text using robust pattern matching."""
+    t_lower = text.lower()
 
+    # 1. Contact Info
+    email_match = re.search(r"[\w.\-]+@[\w.\-]+\.\w{2,}", text)
+    email = email_match.group(0).lower() if email_match else None
 
-def extract_lead_rule_based(conversation_text: str) -> LeadQualificationData:
-    """Fast regex and keyword fallback extraction for Demo Mode without LLM API."""
-    text = conversation_text.lower()
-    data = LeadQualificationData()
+    phone_match = re.search(r"(\+?91[\-\s]?)?[6-9]\d{9}|(\+?\d[\d\s\-]{8,}\d)", text)
+    phone = phone_match.group(0).strip() if phone_match else None
 
-    # Extract email
-    email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", conversation_text)
-    if email_match:
-        data.email = email_match.group(0)
-
-    # Extract phone
-    phone_match = re.search(r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", conversation_text)
-    if phone_match:
-        data.phone = phone_match.group(0)
-
-    # Extract budget (e.g. '$1,499', '$500', '1500', 'starter', 'professional', 'enterprise')
-    budget_match = re.search(r"(\$[\d,]+|\b\d{3,6}\b|\b(?:starter|professional|enterprise|budget\s*of\s*[\w\d]+)\b)", conversation_text, re.IGNORECASE)
-    if budget_match:
-        data.budget = budget_match.group(0)
-
-    # Timeline detection
-    timeline_match = re.search(r"\b(immediately|urgent|next month|this month|this quarter|next quarter|in \d+ months?|q[1-4]|soon)\b", text)
-    if timeline_match:
-        data.timeline = timeline_match.group(0)
-
-    # Decision maker detection
-    if any(phrase in text for phrase in ["cto", "vp", "director", "head of", "decision maker", "i decide", "founder", "ceo", "manager"]):
-        data.is_decision_maker = True
-
-    # Need detection
-    if "cost" in text or "save" in text or "cloud" in text or "aws" in text or "kubernetes" in text or "waste" in text:
-        data.need = "Cloud compute optimization & FinOps cost reduction"
-
-    # Name detection (e.g. 'my name is John' or 'I am Sarah')
-    name_match = re.search(r"(?:my name is|i am|this is)\s+([A-Za-z]+)", conversation_text, re.IGNORECASE)
+    # Name: "My name is X", "I am X", "This is X"
+    name = None
+    name_match = re.search(r"(?:my name is|i am|this is|i'm|call me)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", text, re.IGNORECASE)
     if name_match:
-        data.name = name_match.group(1).capitalize()
+        name = name_match.group(1).title()
 
-    # Company detection
-    company_match = re.search(r"(?:from|at|company is)\s+([A-Za-z0-9]+(?:\s+[A-Za-z0-9]+)?)", conversation_text, re.IGNORECASE)
-    if company_match:
-        data.company = company_match.group(1).title()
+    # City: Check for major metro cities
+    city = None
+    for c in ["mumbai", "bengaluru", "delhi", "hyderabad", "pune", "ahmedabad", "kolkata", "chennai", "noida", "gurugram", "chandigarh", "jaipur"]:
+        if re.search(r"\b" + c + r"\b", t_lower):
+            city = c.title()
+            break
 
-    return data
+    # 2. Category
+    category = None
+    if any(w in t_lower for w in ["laptop", "notebook", "pc", "macbook", "codemaster", "voltbook", "devforge"]):
+        category = "Laptops"
+    elif any(w in t_lower for w in ["phone", "smartphone", "mobile", "android", "iphone", "campro", "velocity"]):
+        category = "Smartphones"
+    elif any(w in t_lower for w in ["tablet", "tab", "ipad", "zenith pad", "tabstudy"]):
+        category = "Tablets"
+    elif any(w in t_lower for w in ["keyboard", "mouse", "headphone", "headset", "charger", "tws", "earbuds"]):
+        category = "Accessories"
+
+    # 3. Budget
+    budget = None
+    from backend.product_recommendation import parse_budget_from_text
+    parsed_b = parse_budget_from_text(text)
+    if parsed_b:
+        budget = f"₹{parsed_b:,}"
+
+    # 4. Requirement
+    requirement = None
+    req_match = re.search(r"(?:for|need|looking for|want|use for)\s+([a-zA-Z0-9\s,\-]{5,60})(?:\.|$|,)", text, re.IGNORECASE)
+    if req_match:
+        requirement = req_match.group(0).strip()
+    elif category:
+        requirement = f"Interested in {category}"
+
+    # 5. Purchase Timeline
+    timeline = None
+    for kw in TIMELINE_30_DAYS_KEYWORDS:
+        if kw in t_lower:
+            timeline = kw.title()
+            break
+
+    # 6. Purchase Intent
+    intent = "Exploring"
+    if any(kw in t_lower for kw in PURCHASE_INTENT_KEYWORDS):
+        intent = "High (Visit / Booking requested)"
+
+    # Compute Score & Breakdown
+    score = 0
+    breakdown = {}
+
+    if requirement and len(requirement) > 5:
+        score += LEAD_SCORING_WEIGHTS["clear_requirement"]
+        breakdown["clear_requirement"] = LEAD_SCORING_WEIGHTS["clear_requirement"]
+
+    if budget:
+        score += LEAD_SCORING_WEIGHTS["budget_specified"]
+        breakdown["budget_specified"] = LEAD_SCORING_WEIGHTS["budget_specified"]
+
+    if timeline and any(kw in timeline.lower() for kw in TIMELINE_30_DAYS_KEYWORDS):
+        score += LEAD_SCORING_WEIGHTS["urgent_timeline"]
+        breakdown["urgent_timeline"] = LEAD_SCORING_WEIGHTS["urgent_timeline"]
+
+    if email or phone:
+        score += LEAD_SCORING_WEIGHTS["contact_info"]
+        breakdown["contact_info"] = LEAD_SCORING_WEIGHTS["contact_info"]
+
+    if intent.startswith("High"):
+        score += LEAD_SCORING_WEIGHTS["strong_intent"]
+        breakdown["strong_intent"] = LEAD_SCORING_WEIGHTS["strong_intent"]
+
+    score = min(100, max(0, score))
+    status = "HOT" if score >= HOT_THRESHOLD else ("WARM" if score >= WARM_THRESHOLD else "COLD")
+
+    return ExtractedLead(
+        name=name,
+        email=email,
+        phone=phone,
+        city=city,
+        interested_category=category,
+        budget=budget,
+        requirement=requirement,
+        purchase_timeline=timeline,
+        purchase_intent=intent,
+        score=score,
+        status=status,
+        score_breakdown=breakdown
+    )

@@ -1,0 +1,79 @@
+# ElectroMart India — Pricing & Promotional Offers
+
+## Category Pricing Structure
+- Budget Laptops: Starting from ₹24,999 to ₹35,000 (Students, Light Browsing)
+- Mid-Range & Developer Laptops: ₹48,000 to ₹80,000 (Coding, Office Multitasking)
+- Premium & Gaming Laptops: ₹89,000 to ₹1,50,000 (AAA Gaming, VFX, Studio Work)
+- Budget Smartphones: ₹11,999 to ₹16,999 (5G Entry, Everyday Utility)
+- Mid-Range Smartphones: ₹27,999 to ₹35,000 (OIS Cameras, Fast Charging)
+- Flagship Smartphones: ₹64,999 to ₹1,25,000 (Snapdragon 8 Gen 3, Foldables)
+- Tablets: ₹9,999 to ₹74,999 (E-Learning to Professional OLED Workstations)
+- Accessories: ₹1,999 to ₹4,999 (Keyboards, Mice, ANC Audio, 100W GaN Chargers)
+
+## Active Promotional Offers
+
+### Student Tech Pass (OFFER-01)
+- Eligible Category: Laptops
+- Benefit: Flat ₹2,500 off on all laptops with valid student ID
+- Validity: Up to 31-Dec-2026
+- Terms & Conditions: Applicable on laptops above ₹30,000. Online & In-store.
+
+### Developer Power Bundle (OFFER-02)
+- Eligible Category: Laptops
+- Benefit: Free MechKeys Wireless Keyboard with CodeMaster Pro 15
+- Validity: Up to 30-Nov-2026
+- Terms & Conditions: Valid on CodeMaster Pro 15 and DevForge Extreme 16.
+
+### 5G Upgrade Exchange Bonus (OFFER-03)
+- Eligible Category: Smartphones
+- Benefit: Up to ₹5,000 extra exchange bonus on trading any 4G phone
+- Validity: Up to 31-Dec-2026
+- Terms & Conditions: Old phone must be in working condition with original IMEI.
+
+### Festive Card Cashback (OFFER-04)
+- Eligible Category: Smartphones
+- Benefit: Instant 10% cashback up to ₹3,000 on HDFC and ICICI cards
+- Validity: Up to 15-Dec-2026
+- Terms & Conditions: Minimum transaction value ₹15,000. Valid on credit & debit EMI.
+
+### Stylus Bundle Special (OFFER-05)
+- Eligible Category: Tablets
+- Benefit: Get magnetic pressure stylus for ₹999 (regular ₹2,999) with Zenith Pad
+- Validity: Up to 31-Dec-2026
+- Terms & Conditions: Applies to Zenith Pad Creator 12 and NovaPad Air 11.
+
+### Work-From-Home Duo (OFFER-06)
+- Eligible Category: Accessories
+- Benefit: Buy Keyboard and Mouse together, save flat ₹1,000
+- Validity: Up to 31-Dec-2026
+- Terms & Conditions: Valid on MechKeys Keyboard + PrecisionGlide Mouse combo.
+
+### No-Cost EMI 12 Months (OFFER-07)
+- Eligible Category: All Categories
+- Benefit: 0% interest EMI for up to 12 months across all leading banks
+- Validity: Up to 31-Dec-2026
+- Terms & Conditions: Cart value above ₹20,000 on major credit cards.
+
+### Extended Care Protection (OFFER-08)
+- Eligible Category: Laptops
+- Benefit: 2nd Year Warranty extension at 50% discount
+- Validity: Up to 31-Dec-2026
+- Terms & Conditions: Must be added at time of laptop purchase.
+
+### SoundBeats Intro Offer (OFFER-09)
+- Eligible Category: Accessories
+- Benefit: Flat ₹1,000 discount on Aura SoundBeats ANC Headset
+- Validity: Up to 30-Nov-2026
+- Terms & Conditions: Promotional coupon code: SOUND1000.
+
+### Screen Shield Guarantee (OFFER-10)
+- Eligible Category: Smartphones
+- Benefit: 1-time free screen replacement for 6 months on Flagship X
+- Validity: Up to 31-Dec-2026
+- Terms & Conditions: Valid on Aura Flagship X and Titan Fold Z.
+
+
+## Financing & Payment Terms
+- 0% No-Cost EMI: 3, 6, 9, and 12-month tenures on purchases above ₹20,000 with HDFC, ICICI, SBI, Axis, and Bajaj Finserv.
+- Instant Bank Discounts: 10% instant discount (up to ₹3,000) on selected credit and debit cards.
+- Trade-In Exchange: Guaranteed value with up to ₹5,000 extra bonus when trading in any working 4G/5G smartphone or laptop.
