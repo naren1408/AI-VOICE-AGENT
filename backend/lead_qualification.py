@@ -60,9 +60,12 @@ def extract_lead_from_conversation(text: str) -> ExtractedLead:
 
     # Name: "My name is X", "I am X", "This is X"
     name = None
-    name_match = re.search(r"(?:my name is|i am|this is|i'm|call me)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", text, re.IGNORECASE)
+    name_match = re.search(r"(?:my name is|this is|i'm|call me|i am)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", text, re.IGNORECASE)
     if name_match:
-        name = name_match.group(1).title()
+        cand = name_match.group(1).title()
+        # Filter out common false names
+        if cand.lower() not in ["silent", "looking", "interested", "from", "searching", "here", "ready", "calling"]:
+            name = cand
 
     # City: Check for major metro cities
     city = None
@@ -71,15 +74,19 @@ def extract_lead_from_conversation(text: str) -> ExtractedLead:
             city = c.title()
             break
 
-    # 2. Category
+    # 2. Category — Prioritize user's latest query or explicit intent over system greetings
     category = None
-    if any(w in t_lower for w in ["laptop", "notebook", "pc", "macbook", "codemaster", "voltbook", "devforge"]):
-        category = "Laptops"
-    elif any(w in t_lower for w in ["phone", "smartphone", "mobile", "android", "iphone", "campro", "velocity"]):
-        category = "Smartphones"
-    elif any(w in t_lower for w in ["tablet", "tab", "ipad", "zenith pad", "tabstudy"]):
+    # If the text has user messages, isolate user parts to avoid matching agent greeting words
+    user_parts = re.findall(r"(?:USER:|user:)(.*?)(?:AGENT:|assistant:|$)", text, re.DOTALL | re.IGNORECASE)
+    eval_text = " ".join(user_parts).lower() if user_parts else t_lower
+
+    if any(w in eval_text for w in ["tablet", "tab", "ipad", "zenith pad", "tabstudy"]):
         category = "Tablets"
-    elif any(w in t_lower for w in ["keyboard", "mouse", "headphone", "headset", "charger", "tws", "earbuds"]):
+    elif any(w in eval_text for w in ["phone", "smartphone", "mobile", "android", "iphone", "campro", "velocity", "powermax"]):
+        category = "Smartphones"
+    elif any(w in eval_text for w in ["laptop", "notebook", "pc", "macbook", "codemaster", "voltbook", "devforge", "cyberpulse"]):
+        category = "Laptops"
+    elif any(w in eval_text for w in ["keyboard", "mouse", "headphone", "headset", "charger", "tws", "earbuds", "accessory"]):
         category = "Accessories"
 
     # 3. Budget

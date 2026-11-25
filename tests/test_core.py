@@ -248,3 +248,30 @@ def test_database_persistence():
         assert fetched.summary == "Test sales call"
     finally:
         db.close()
+
+
+def test_conversational_edge_cases():
+    """Verify conversational edge cases from live testing."""
+    from backend.ai_agent import execute_sales_turn
+
+    # 1. Introduction + Category Inquiry
+    r1 = execute_sales_turn("TEST-T1", "my name is Sai Narayan and I need to know what categories are present and can you introduce yourself")
+    assert "Sai Narayan" in r1["reply"]
+    assert "Laptops" in r1["reply"] and "Smartphones" in r1["reply"] and "Tablets" in r1["reply"]
+    assert r1["booking"] is None
+
+    # 2. Looking for tablets today (no false booking)
+    r2 = execute_sales_turn("TEST-T2", "hello Anya I am silent and I am from Delhi and I am looking for tablets today")
+    assert r2["booking"] is None
+    assert r2["lead"]["interested_category"] == "Tablets"
+    assert r2["lead"]["city"] == "Delhi"
+
+    # 3. Catalog scope inquiry (more phones available)
+    r3 = execute_sales_turn("TEST-T3", "there are only three phones available in this or there are more phones are available")
+    assert "7 smartphones" in r3["reply"]
+
+    # 4. Display available items (clean catalog overview, no SaaS trial text)
+    r4 = execute_sales_turn("TEST-T4", "can you display the items that are available on this website")
+    assert "25 top-rated electronics" in r4["reply"]
+    assert "free trial" not in r4["reply"].lower()
+

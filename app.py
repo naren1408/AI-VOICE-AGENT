@@ -76,8 +76,8 @@ def _init_session():
         "messages": [],
         "sentiment_history": [],
         "lead_data": {
-            "name": None, "email": None, "phone": None, "city": "Mumbai",
-            "category": "Laptops", "budget": "₹70,000", "score": 0, "status": "COLD"
+            "name": None, "email": None, "phone": None, "city": "Not captured yet",
+            "category": "Exploring", "budget": "Not specified", "score": 0, "status": "COLD"
         },
         "recommendations": [],
         "booking_info": None,
@@ -138,8 +138,8 @@ with tab1:
             st.markdown(f"**👤 Customer Name:** {lead.get('name') or 'Not captured yet'}")
             st.markdown(f"**✉️ Email:** {lead.get('email') or 'Not captured yet'}")
             st.markdown(f"**📞 Phone:** {lead.get('phone') or 'Not captured yet'}")
-            st.markdown(f"**🏙️ City:** {lead.get('city') or 'Mumbai (Default)'}")
-            st.markdown(f"**📦 Category:** {lead.get('category') or 'Laptops'}")
+            st.markdown(f"**🏙️ City:** {lead.get('city') or 'Not captured yet'}")
+            st.markdown(f"**📦 Category:** {lead.get('category') or 'Exploring'}")
             st.markdown(f"**💰 Budget:** {lead.get('budget') or 'Not specified'}")
             st.markdown(f"**⏱️ Timeline:** {lead.get('timeline') or 'Exploring'}")
 
@@ -259,13 +259,13 @@ with tab1:
                 # Update live intelligence
                 st.session_state.sentiment_history.append(turn_res["sentiment"]["score"])
                 st.session_state.lead_data = {
-                    "name": turn_res["lead"].get("name"),
-                    "email": turn_res["lead"].get("email"),
-                    "phone": turn_res["lead"].get("phone"),
-                    "city": turn_res["lead"].get("city") or "Mumbai",
-                    "category": turn_res["lead"].get("interested_category") or "Laptops",
-                    "budget": turn_res["lead"].get("budget"),
-                    "timeline": turn_res["lead"].get("purchase_timeline"),
+                    "name": turn_res["lead"].get("name") or st.session_state.lead_data.get("name"),
+                    "email": turn_res["lead"].get("email") or st.session_state.lead_data.get("email"),
+                    "phone": turn_res["lead"].get("phone") or st.session_state.lead_data.get("phone"),
+                    "city": turn_res["lead"].get("city") or st.session_state.lead_data.get("city") or "Not captured yet",
+                    "category": turn_res["lead"].get("interested_category") or st.session_state.lead_data.get("category") or "Exploring",
+                    "budget": turn_res["lead"].get("budget") or st.session_state.lead_data.get("budget") or "Not specified",
+                    "timeline": turn_res["lead"].get("purchase_timeline") or st.session_state.lead_data.get("timeline") or "Exploring",
                     "score": turn_res["lead"].get("score", 0),
                     "status": turn_res["lead"].get("status", "COLD")
                 }

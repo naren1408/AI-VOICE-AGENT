@@ -157,21 +157,68 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
     """Generate realistic rule-based reply matching ElectroMart scenarios."""
     t = user_input.lower()
 
-    # 0. Personal introduction, name greetings & categories inquiry
-    is_asking_intro = any(w in t for w in ["introduce yourself", "who are you", "what is your name", "tell me about yourself", "what are you"])
-    is_asking_categories = any(w in t for w in ["categories", "category", "what do you sell", "what products", "what do you offer", "what items"])
+    # --- 0. Broad Catalog & Availability Inquiries ---
+    # E.g. "can you display the items that are available on this website", "what products are available"
+    if any(p in t for p in ["display the items", "available on this website", "items that are available", "what all products", "what products do you have", "show all products", "browse catalog", "full catalog", "what items are present", "what all do you sell"]):
+        return (
+            f"Welcome to {COMPANY_NAME}! We offer 25 top-rated electronics across 4 core categories:\n\n"
+            "1. 💻 **Laptops (8 Models)** — Student laptops from ₹24,999 (VoltBook, SlimLite), Coding & Office work (CodeMaster Pro ₹64,999, ZenithBook Air ₹48,999), and High-Performance RTX Gaming (CyberPulse G15 ₹94,999, DevForge Extreme ₹79,999).\n"
+            "2. 📱 **Smartphones (7 Models)** — 6000mAh monster battery (Volt PowerMax ₹13,999), 50MP Sony OIS Camera (Zenith CamPro ₹34,999), and Flagships (Aura Flagship X ₹64,999, Titan Fold Z ₹1,24,999).\n"
+            "3. 📲 **Tablets (5 Models)** — E-learning & Students (TabStudy ₹14,999), 120Hz Media (NovaPad Air ₹24,999), and Stylus Creator pads (Zenith Pad Creator 12 ₹38,999).\n"
+            "4. 🎧 **Accessories (5 Models)** — Mechanical keyboards (MechKeys ₹3,999), ergonomic mice (₹1,999), 100W GaN fast chargers (₹3,499), and ANC headphones (₹4,999).\n\n"
+            "You can explore and filter all 25 products with live price filters in the **'Products, Leads & Appointments'** tab above! Which category would you like to explore?"
+        )
+
+    # --- 0.1 Catalog Scope & Availability Depth Queries ---
+    # E.g. "there are only three phones available in this or there are more phones are available"
+    if any(w in t for w in ["phone", "smartphone", "mobile"]) and any(w in t for w in ["only three", "only 3", "more phones", "how many", "all phones", "other phones", "more available"]):
+        return (
+            "We have a total of **7 smartphones** in our catalog! In addition to the three shown:\n"
+            "• **Volt PowerMax 5G** (₹13,999) — 6000mAh battery champion (up to 2.5 days battery life).\n"
+            "• **Zenith CamPro 5G** (₹34,999) — Triple 50MP Sony IMX sensors with Optical Image Stabilization (OIS).\n"
+            "• **Aura Flagship X** (₹64,999) — Snapdragon 8 Gen 3 with 100x zoom and titanium build.\n"
+            "• **Titan Fold Z** (₹1,24,999) — Dual 120Hz foldable screens for ultimate productivity.\n\n"
+            "You can also browse all 7 smartphones in detail with full specifications under the **'Products, Leads & Appointments'** tab!"
+        )
+
+    if any(w in t for w in ["laptop", "laptops", "notebook"]) and any(w in t for w in ["only three", "only 3", "more laptops", "how many", "all laptops", "other laptops", "more available"]):
+        return (
+            "We carry **8 laptops** across every budget and use case!\n"
+            "• **SlimLite 13** (₹24,999) & **VoltBook Student 14** (₹34,999) for students.\n"
+            "• **ZenithBook Air 15** (₹48,999) & **OmniBook Flex 14 2-in-1** (₹54,999) for office and multitasking.\n"
+            "• **CodeMaster Pro 15** (₹64,999) & **DevForge Extreme 16** (₹79,999) for programming & Docker.\n"
+            "• **CyberPulse G15** (₹94,999) & **TitanBook Studio 16** (₹1,19,999) for RTX 4060/4070 gaming and 3D studio work.\n\n"
+            "You can view and filter all 8 models in the Products tab!"
+        )
+
+    if any(w in t for w in ["tablet", "tablets", "tab"]) and any(w in t for w in ["only three", "only 3", "more tablets", "how many", "all tablets", "other tablets", "more available"]):
+        return (
+            "We have **5 tablets** in our catalog:\n"
+            "• **MediaTab 8** (₹9,999) — Compact 8-inch for reading and streaming.\n"
+            "• **TabStudy 10.1** (₹14,999) — Student e-learning tablet.\n"
+            "• **NovaPad Air 11** (₹24,999) — 120Hz smooth display with quad speakers.\n"
+            "• **Zenith Pad Creator 12** (₹38,999) — 2.8K display with active magnetic pressure stylus included.\n"
+            "• **UltraSlate Pro 13** (₹59,999) — 13-inch OLED with Snapdragon X Elite for pro creative workflows!"
+        )
+
+    # --- 0.2 Personal introduction, name greetings & categories inquiry ---
+    # E.g. "my name is Sai Narayan and I need to know what categories are present and can you introduce yourself"
+    is_asking_intro = any(w in t for w in ["introduce yourself", "who are you", "what is your name", "tell me about yourself", "what are you", "introduce"])
+    is_asking_categories = any(w in t for w in ["categories", "category", "what do you sell", "what products", "what do you offer", "what items", "what is present", "what are present"])
 
     user_name = None
-    m_name = re.search(r"(?:my name is|i am|this is|i'm|call me)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", user_input, re.IGNORECASE)
+    m_name = re.search(r"(?:my name is|this is|i'm|call me|i am)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)", user_input, re.IGNORECASE)
     if m_name:
-        user_name = m_name.group(1).title()
+        cand = m_name.group(1).title()
+        if cand.lower() not in ["silent", "looking", "interested", "from", "searching", "here", "ready"]:
+            user_name = cand
 
     if is_asking_intro or is_asking_categories or (user_name and not any(kw in t for kw in ["laptop", "phone", "tablet", "price", "70k", "70000", "35k", "visit", "tomorrow"])):
         greeting_prefix = f"Hello {user_name}! Pleasure to meet you. " if user_name else "Hello! "
         intro_part = f"I am {AGENT_NAME}, your AI electronics sales advisor at {COMPANY_NAME}. "
         categories_part = (
-            "We offer four primary electronics categories:\n"
-            "1. 💻 **Laptops** — from student models (₹24,999) to developer, business ultrabooks, and RTX 4060 gaming.\n"
+            "We offer four primary electronics categories:\n\n"
+            "1. 💻 **Laptops** — from student models (₹24,999) to developer ultrabooks and RTX 4060 gaming.\n"
             "2. 📱 **Smartphones** — budget 5G phones to 50MP Sony OIS camera devices and foldables (₹11,999 to ₹1,24,999).\n"
             "3. 📲 **Tablets** — for e-learning, digital note-taking with magnetic stylus, and OLED workstations.\n"
             "4. 🎧 **Workspace Accessories** — mechanical keyboards, ergonomic mice, 100W GaN chargers, and ANC headsets.\n\n"
@@ -331,40 +378,43 @@ CONVERSATION HISTORY:
             agent_reply = _generate_demo_reply(user_input, recs, rag_context)
             mode = "Demo Mode"
 
-        # 6. Appointment Booking Detection
+        # 6. Appointment Booking Detection — Requires explicit booking intent + explicit time/date
         booking_result = None
         ics_data = None
         lower_input = user_input.lower()
-        if any(w in lower_input for w in ["book", "confirm", "visit", "pm", "am", "tomorrow", "appointment", "slot"]):
-            if any(w in lower_input for w in ["4pm", "pm", "am", "tomorrow", "today", "slot", "4:00", "visit"]):
-                target_date, target_time_str = parse_natural_datetime(user_input)
-                cust_email = extracted_lead.email or "customer@example.com"
-                cust_name = extracted_lead.name or "Valued Customer"
+        
+        has_booking_intent = bool(re.search(r"\b(book|booking|schedule|reserve|slot|confirm visit|showroom visit|store visit|take an appointment)\b", lower_input))
+        has_explicit_time = bool(re.search(r"\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|\d{1,2}\s*(?:am|pm)|at\s+\d{1,2}|tomorrow|today|morning|evening|afternoon)\b", lower_input))
 
-                success, b_msg, appt = book_appointment_in_db(
-                    db=db,
-                    customer_name=cust_name,
-                    customer_email=cust_email,
-                    customer_phone=extracted_lead.phone,
-                    date_val=target_date,
-                    time_str=target_time_str,
-                    appointment_type="Store Visit",
-                    interested_product=recs[0]["product_name"] if recs else "Electronics Demo",
-                    city=extracted_lead.city or "Mumbai",
-                    notes="Booked via AI Voice Agent"
+        if has_booking_intent and (has_explicit_time or "book" in lower_input or "slot" in lower_input):
+            target_date, target_time_str = parse_natural_datetime(user_input)
+            cust_email = extracted_lead.email or "customer@example.com"
+            cust_name = extracted_lead.name or "Valued Customer"
+
+            success, b_msg, appt = book_appointment_in_db(
+                db=db,
+                customer_name=cust_name,
+                customer_email=cust_email,
+                customer_phone=extracted_lead.phone,
+                date_val=target_date,
+                time_str=target_time_str,
+                appointment_type="Store Visit",
+                interested_product=recs[0]["product_name"] if recs else "Electronics Demo",
+                city=extracted_lead.city or "Mumbai",
+                notes="Booked via AI Voice Agent"
+            )
+            if success:
+                booking_result = {
+                    "status": "success",
+                    "message": b_msg,
+                    "date": target_date.strftime("%Y-%m-%d"),
+                    "time": target_time_str
+                }
+                ics_data = generate_ics_content(
+                    cust_name, target_date, target_time_str,
+                    product=recs[0]["product_name"] if recs else "Electronics"
                 )
-                if success:
-                    booking_result = {
-                        "status": "success",
-                        "message": b_msg,
-                        "date": target_date.strftime("%Y-%m-%d"),
-                        "time": target_time_str
-                    }
-                    ics_data = generate_ics_content(
-                        cust_name, target_date, target_time_str,
-                        product=recs[0]["product_name"] if recs else "Electronics"
-                    )
-                    agent_reply += f" [System: Store demo confirmed for {target_date.strftime('%d %B')} at {target_time_str}. Calendar invite ready.]"
+                agent_reply += f" [System: Store demo confirmed for {target_date.strftime('%d %B')} at {target_time_str}. Calendar invite ready.]"
 
         # 7. Persist to Database
         lead = db.query(Lead).filter(Lead.call_id == call_id).first()
@@ -419,7 +469,7 @@ CONVERSATION HISTORY:
             "mode": mode,
             "language": language,
             "sentiment": {"label": sentiment_label, "score": sentiment_score},
-            "lead": extracted_lead.dict(),
+            "lead": extracted_lead.model_dump() if hasattr(extracted_lead, "model_dump") else extracted_lead.dict(),
             "sources": [{"text": chunk[:140], "score": score} for chunk, score in rag_sources],
             "recommendations": recs,
             "booking": booking_result,
