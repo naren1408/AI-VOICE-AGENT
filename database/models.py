@@ -11,7 +11,7 @@ class Lead(Base):
     id = Column(Integer, primary_key=True, index=True)
     call_id = Column(String(64), unique=True, index=True, nullable=False)
     name = Column(String(128), nullable=True)
-    email = Column(String(128), unique=True, index=True, nullable=True)
+    email = Column(String(128), index=True, nullable=True)
     phone = Column(String(32), nullable=True)
     company = Column(String(128), nullable=True)
     need = Column(Text, nullable=True)

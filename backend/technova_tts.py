@@ -4,6 +4,7 @@ Uses Edge-TTS (Microsoft Neural Voices) — completely free, no API key required
 """
 import asyncio
 import os
+import uuid
 import tempfile
 from typing import Optional
 
@@ -31,7 +32,7 @@ def speak(text: str, language: str = "en") -> Optional[str]:
     Returns None if TTS fails.
     """
     voice = VOICE_MAP.get(language[:2], VOICE_MAP["default"])
-    output_path = os.path.join(tempfile.gettempdir(), "tn_tts_response.mp3")
+    output_path = os.path.join(tempfile.gettempdir(), f"tn_tts_{uuid.uuid4().hex[:8]}.mp3")
 
     try:
         try:

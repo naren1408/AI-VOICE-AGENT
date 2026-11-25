@@ -281,14 +281,18 @@ elif page == "🤖 AI Voice Agent":
 
             # Process audio input
             if audio_data is not None:
-                from backend.technova_stt import transcribe_audio_file
-                with st.spinner("🔄 Transcribing audio..."):
-                    transcript, status_msg = transcribe_audio_file(audio_data.read())
-                if transcript:
-                    user_text = transcript
-                    st.success(f"📝 You said: *{transcript}*")
-                else:
-                    st.warning(f"⚠️ {status_msg}")
+                audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data.read()
+                audio_hash = hash(audio_bytes) if audio_bytes else None
+                if audio_bytes and len(audio_bytes) > 100 and audio_hash != st.session_state.get("last_audio_hash"):
+                    st.session_state["last_audio_hash"] = audio_hash
+                    from backend.technova_stt import transcribe_audio_file
+                    with st.spinner("🔄 Transcribing audio..."):
+                        transcript, status_msg = transcribe_audio_file(audio_bytes)
+                    if transcript:
+                        user_text = transcript
+                        st.success(f"📝 You said: *{transcript}*")
+                    elif status_msg != "success":
+                        st.warning(f"⚠️ {status_msg}")
 
             # Process user message
             if user_text:
