@@ -1,0 +1,40 @@
+# Environment variables
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Databases & Vector store
+*.db
+*.sqlite3
+*.sqlite
+vector_index/
+
+# Audio / Temp media
+*.mp3
+*.wav
+*.ogg
+*.ics
+temp_audio/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

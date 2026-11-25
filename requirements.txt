@@ -1,0 +1,21 @@
+# Core Web & API
+fastapi>=0.110.0
+uvicorn>=0.28.0
+streamlit>=1.32.0
+pydantic>=2.6.0
+python-dotenv>=1.0.1
+requests>=2.31.0
+
+# Database
+sqlalchemy>=2.0.28
+
+# Google GenAI SDK (Modern official SDK)
+google-genai>=0.1.1
+
+# Speech Synthesis (Free edge-tts)
+edge-tts>=6.1.10
+
+# Architecture diagram & testing
+matplotlib>=3.8.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
