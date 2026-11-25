@@ -87,8 +87,8 @@ DEMO_REPLIES = {
         "and **Aura SoundBeats ANC Headphones** (₹4,999)."
     ),
     "store_visit": (
-        "Certainly! We'd be delighted to host you for a hands-on demo at our showroom. "
-        "What date and time would be convenient for your visit?"
+        "Certainly! I would be delighted to schedule a hands-on showroom appointment for you to test this in person. "
+        "What date and time would be convenient for your visit (e.g. tomorrow at 4:00 PM), and which city showroom would you like to visit?"
     ),
     "store_hours": (
         "ElectroMart showrooms are open Monday through Sunday from 10:00 AM to 08:30 PM. "
@@ -169,6 +169,13 @@ def _clean_rag_chunk_for_speech(chunk: str) -> str:
     clean = re.sub(r"\[.*?\.txt\]", "", chunk)
     clean = re.sub(r"#{1,6}\s*", "", clean)
     clean = clean.replace("**", "").replace("- ", "").strip()
+    
+    # If the chunk has FAQ structure "Q: ... Answer: ...", strip out the prompt artifacts and take the answer
+    if "Answer:" in clean:
+        clean = clean.split("Answer:", 1)[1].strip()
+    elif "answer:" in clean:
+        clean = clean.split("answer:", 1)[1].strip()
+
     # Return first 2 concise sentences
     sentences = [s.strip() for s in clean.split(".") if s.strip()]
     if sentences:
@@ -318,7 +325,10 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
     if any(w in t for w in ["flagship", "expensive phone", "titan fold", "foldable", "best phone", "premium phone"]):
         return DEMO_REPLIES["flagship_phone"]
 
-    # 5. Policies & Showroom Info
+    # 5. Policies & Showroom / Appointment Requests
+    if any(w in t for w in ["appointment", "have an appointment", "book an appointment", "schedule an appointment", "book slot", "book a slot", "book demo", "visit store", "store demo", "test this product", "test this", "hands on", "hands-on", "experience centre"]):
+        return DEMO_REPLIES["store_visit"]
+
     if any(w in t for w in ["store", "showroom", "location", "address", "timings", "open", "timing", "hours"]):
         if any(w in t for w in ["visit", "book", "come", "tomorrow"]):
             return DEMO_REPLIES["store_visit"]
