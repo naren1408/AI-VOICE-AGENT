@@ -181,10 +181,6 @@ def get_ai_client():
         return None
 
 
-# Backward-compatible alias
-get_gemini_client = get_ai_client
-
-
 def is_demo_mode() -> bool:
     """True when no OpenAI API key is configured."""
     return get_ai_client() is None
@@ -390,11 +386,13 @@ def _handle_voice_appointment_flow(
         current_step = booking_state.get("step")
 
         # Step 1: Detect Appointment Booking Intent
-        is_appt_request = bool(re.search(
-            r"\b(book\s+(?:an\s+)?appointment|take\s+(?:an\s+)?appointment|want\s+(?:an\s+)?appointment|"
-            r"need\s+(?:an\s+)?appointment|schedule\s+(?:an\s+)?appointment|appointment\s+booking|visit\s+store|"
-            r"showroom\s+visit|store\s+demo)\b", lower_input
-        )) or any(w in lower_input for w in ["అపాయింట్‌మెంట్", "అపాయింట్మెంట్", "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್", "अपॉइंटमेंट"])
+        is_appt_request = (
+            bool(re.search(
+                r"\b(?:book|take|want|need|schedule|have|get|make|request|fix)\s+(?:an?\s+)?appointment\b|"
+                r"\b(?:an\s+appointment|appointment\s+for|appointment\s+booking|book\s+(?:a\s+)?(?:slot|demo|visit)|"
+                r"visit\s+store|store\s+visit|showroom\s+visit|store\s+demo)\b", lower_input
+            )) or any(w in lower_input for w in ["అపాయింట్‌మెంట్", "అపాయింట్మెంట్", "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್", "अपॉइंटमेंट"])
+        ) and not any(w in lower_input for w in ["reschedule", "cancel", "timing", "hours", "status"])
 
         if current_step is None and is_appt_request:
             # Check what information is already in state or conversation
@@ -406,6 +404,13 @@ def _handle_voice_appointment_flow(
             if extracted.email: booking_state["email"] = extracted.email
             if extracted.city: booking_state["city"] = extracted.city
             if extracted.interested_category: booking_state["product"] = extracted.interested_category
+
+            # Check if time/date was also provided upfront
+            has_time_phrase = bool(re.search(r"(?:\d{1,2}(?::\d{2})?\s*(?:am|pm|p\.m\.|a\.m\.)|\bat\s+\d{1,2}\b)", lower_input))
+            if has_time_phrase:
+                target_date, target_time_str = parse_natural_datetime(user_input)
+                booking_state["date"] = target_date.strftime("%Y-%m-%d")
+                booking_state["time"] = target_time_str
 
             # If name or contact is missing, ask for basic details
             if not booking_state.get("name") or not (booking_state.get("phone") or booking_state.get("email")):
@@ -419,16 +424,27 @@ def _handle_voice_appointment_flow(
                 else:
                     return "Sure! I can help you book an appointment. Could you please fill in your basic details first (your name, phone number, and product of interest)?", None, None
             else:
-                # Basic details already present! Advance to asking time
-                booking_state["step"] = "ask_time"
-                if language == "te":
-                    return f"ధన్యవాదాలు {booking_state['name']}! మీ అపాయింట్‌మెంట్ కోసం మీరు ఏ తేదీ మరియు సమయాన్ని ఇష్టపడతారు?", None, None
-                elif language == "kn":
-                    return f"ಧನ್ಯವಾದಗಳು {booking_state['name']}! ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ ನೀವು ಯಾವ ದಿನಾಂಕ ಮತ್ತು ಸಮಯವನ್ನು ಆದ್ಯತೆ ನೀಡುತ್ತೀರಿ?", None, None
-                elif language == "hi":
-                    return f"धन्यवाद {booking_state['name']}! आप अपनी अपॉइंटमेंट के लिए कौन सी तारीख और समय पसंद करेंगे?", None, None
+                # Basic details already present! Advance to asking time or location
+                if booking_state.get("date") and booking_state.get("time"):
+                    booking_state["step"] = "ask_location"
+                    if language == "te":
+                        return "మీరు అపాయింట్‌మెంట్ ఎక్కడ కోరుకుంటున్నారు? మీరు షోరూమ్ విజిట్, ఆన్‌లైన్ కన్సల్టేషన్ లేదా కాల్‌బ్యాక్‌ను ఇష్టపడతారా?", None, None
+                    elif language == "kn":
+                        return "ನೀವು ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಎಲ್ಲಿ ಬಯಸುತ್ತೀರಿ? ಶೋರೂಂ ಭೇಟಿ, ಆನ್‌ಲೈನ್ ಸಮಾಲೋಚನೆ ಅಥವಾ ಕಾಲ್‌ಬ್ಯಾಕ್ ಬಯಸುವಿರಾ?", None, None
+                    elif language == "hi":
+                        return "आप अपॉइंटमेंट कहाँ रखना चाहेंगे? क्या आप स्टोर विज़िट, ऑनलाइन कंसल्टेशन या कॉलबैक पसंद करेंगे?", None, None
+                    else:
+                        return "Where would you like to have the appointment? Would you prefer a store visit, an online consultation, or a callback?", None, None
                 else:
-                    return f"Thank you, {booking_state['name']}! What date and time would you prefer for your appointment?", None, None
+                    booking_state["step"] = "ask_time"
+                    if language == "te":
+                        return f"ధన్యవాదాలు {booking_state['name']}! మీ అపాయింట్‌మెంట్ కోసం మీరు ఏ తేదీ మరియు సమయాన్ని ఇష్టపడతారు?", None, None
+                    elif language == "kn":
+                        return f"ಧನ್ಯವಾದಗಳು {booking_state['name']}! ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ ನೀವು ಯಾವ ದಿನಾಂಕ మరియు సమయాన్ని ಆದ್ಯತೆ ನೀಡುತ್ತೀರಿ?", None, None
+                    elif language == "hi":
+                        return f"धन्यवाद {booking_state['name']}! आप अपनी अपॉइंटमेंट के लिए कौन सी तारीख और समय पसंद करेंगे?", None, None
+                    else:
+                        return f"Thank you, {booking_state['name']}! What date and time would you prefer for your appointment?", None, None
 
         # Step 2: Collecting Customer Details
         if current_step == "collect_details":
@@ -442,9 +458,16 @@ def _handle_voice_appointment_flow(
             name_cand = extract_customer_name(user_input)
             if name_cand: booking_state["name"] = name_cand
 
-            # Check phone regex
-            m_ph = re.search(r"(\+?\d{1,3}[-.\s]?)?(\d{10}|\d{5}[-.\s]?\d{5})", user_input)
-            if m_ph: booking_state["phone"] = m_ph.group(0).replace(" ", "").replace("-", "")
+            # Check phone regex supporting space-separated digits
+            m_ph = re.search(r"(\+?\d{1,3}[-.\s]?)?([6-9]\d{3,4}[\-\s]?\d{5,6}|\d{10})", user_input)
+            if m_ph: booking_state["phone"] = re.sub(r"[^\d+]", "", m_ph.group(0))
+
+            # Check if time/date was also supplied in this turn
+            has_time_phrase = bool(re.search(r"(?:\d{1,2}(?::\d{2})?\s*(?:am|pm|p\.m\.|a\.m\.)|\bat\s+\d{1,2}\b)", lower_input))
+            if has_time_phrase:
+                target_date, target_time_str = parse_natural_datetime(user_input)
+                booking_state["date"] = target_date.strftime("%Y-%m-%d")
+                booking_state["time"] = target_time_str
 
             # If still missing name
             if not booking_state.get("name"):
@@ -453,16 +476,27 @@ def _handle_voice_appointment_flow(
             if not booking_state.get("phone") and not booking_state.get("email"):
                 return f"Thank you {booking_state['name']}! What is your phone number or email address?", None, None
 
-            # Both captured! Advance to asking time
-            booking_state["step"] = "ask_time"
-            if language == "te":
-                return f"ధన్యవాదాలు {booking_state['name']}! మీ అపాయింట్‌మెంట్ కోసం మీరు ఏ తేదీ మరియు సమయాన్ని ఇష్టపడతారు?", None, None
-            elif language == "kn":
-                return f"ಧನ್ಯವಾದಗಳು {booking_state['name']}! ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ ನೀವು ಯಾವ ದಿನಾಂಕ ಮತ್ತು ಸಮಯವನ್ನು ಆದ್ಯತೆ ನೀಡುತ್ತೀರಿ?", None, None
-            elif language == "hi":
-                return f"धन्यवाद {booking_state['name']}! आप अपनी अपॉइंटमेंट के लिए कौन सी तारीख और समय पसंद करेंगे?", None, None
+            # Both captured! Advance to asking time or location
+            if booking_state.get("date") and booking_state.get("time"):
+                booking_state["step"] = "ask_location"
+                if language == "te":
+                    return "మీరు అపాయింట్‌మెంట్ ఎక్కడ కోరుకుంటున్నారు? మీరు షోరూమ్ విజిట్, ఆన్‌లైన్ కన్సల్టేషన్ లేదా కాల్‌బ్యాక్‌ను ఇష్టపడతారా?", None, None
+                elif language == "kn":
+                    return "ನೀವು ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಎಲ್ಲಿ ಬಯಸುತ್ತೀರಿ? ಶೋರೂಂ ಭೇಟಿ, ಆನ್‌ಲೈನ್ ಸಮಾಲೋಚನೆ ಅಥವಾ ಕಾಲ್‌ಬ್ಯಾಕ್ ಬಯಸುವಿರಾ?", None, None
+                elif language == "hi":
+                    return "आप अपॉइंटमेंट कहाँ रखना चाहेंगे? क्या आप स्टोर विज़िट, ऑनलाइन कंसल्टेशन या कॉलबैक पसंद करेंगे?", None, None
+                else:
+                    return "Where would you like to have the appointment? Would you prefer a store visit, an online consultation, or a callback?", None, None
             else:
-                return f"Thank you, {booking_state['name']}! What date and time would you prefer for your appointment?", None, None
+                booking_state["step"] = "ask_time"
+                if language == "te":
+                    return f"ధన్యవాదాలు {booking_state['name']}! మీ అపాయింట్‌మెంట్ కోసం మీరు ఏ తేదీ మరియు సమయాన్ని ఇష్టపడతారు?", None, None
+                elif language == "kn":
+                    return f"ಧನ್ಯವಾದಗಳು {booking_state['name']}! ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ ನೀವು ಯಾವ ದಿನಾಂಕ మరియు సమయాన్ని ಆದ್ಯತೆ ನೀಡುತ್ತೀರಿ?", None, None
+                elif language == "hi":
+                    return f"धन्यवाद {booking_state['name']}! आप अपनी अपॉइंटमेंट के लिए कौन सी तारीख और समय पसंद करेंगे?", None, None
+                else:
+                    return f"Thank you, {booking_state['name']}! What date and time would you prefer for your appointment?", None, None
 
         # Step 3: Ask Appointment Time
         if current_step == "ask_time":

@@ -106,8 +106,13 @@ def extract_lead_from_conversation(text: str) -> ExtractedLead:
             domain_part = m_em.group(2).replace(" ", "").lower()
             email = f"{user_part}@{domain_part}"
 
-    phone_match = re.search(r"(\+?91[\-\s]?)?[6-9]\d{9}|(\+?\d[\d\s\-]{8,}\d)", text)
-    phone = phone_match.group(0).strip() if phone_match else None
+    # Phone extraction supporting contiguous or space-separated digits (e.g. 6300 135303, 98791 22334)
+    phone_match = re.search(r"(?:phone|mobile|call|contact|number)?[:\s]*((?:\+?91[\-\s]?)?[6-9]\d{3,4}[\-\s]?\d{5,6}|\+?\d[\d\s\-]{8,}\d)", text, re.IGNORECASE)
+    phone = phone_match.group(1).strip() if phone_match else None
+    if phone:
+        digits_clean = re.sub(r"[^\d+]", "", phone)
+        if len(digits_clean.replace("+91", "")) >= 10:
+            phone = digits_clean
 
     # Name: Strict validated extraction
     name = extract_customer_name(text)

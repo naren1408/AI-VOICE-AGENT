@@ -39,12 +39,12 @@ def draw_architecture():
         ax.text(x + w / 2, y + h * 0.32, subtitle, fontsize=8.2, ha="center", va="center", color="#475569")
 
     # 1. Client Layer (Top)
-    draw_box(1.0, 6.7, 3.4, 0.95, "🖥️ Streamlit Frontend UI", "3 Tabs • Live Chat • CRM • BI Insights", "#EFF6FF", "#2563EB")
+    draw_box(1.0, 6.7, 3.4, 0.95, "🖥️ Streamlit SaaS Frontend", "7 Views • Live Intelligence • CRM Snapshot", "#EFF6FF", "#2563EB")
     draw_box(5.3, 6.7, 3.4, 0.95, "🎙️ Speech-to-Text (STT)", "OpenAI Whisper / Free Web Speech", "#F0FDF4", "#16A34A")
-    draw_box(9.6, 6.7, 3.4, 0.95, "🗣️ Text-to-Speech (TTS)", "Edge-TTS (en-IN / te-IN / kn-IN)", "#FAF5FF", "#9333EA")
+    draw_box(9.6, 6.7, 3.4, 0.95, "🗣️ Text-to-Speech (TTS)", "Edge-TTS (en-IN / te-IN / kn-IN / hi-IN)", "#FAF5FF", "#9333EA")
 
     # 2. API Gateway & Controller Layer (Middle-Top)
-    draw_box(4.5, 5.1, 5.0, 1.0, "⚡ FastAPI REST API Gateway", "Endpoints: /call/text, /call/audio, /products, /leads, /appointments", "#FEF3C7", "#D97706")
+    draw_box(4.5, 5.1, 5.0, 1.0, "⚡ FastAPI REST API Gateway", "Endpoints: /call/text, /call/audio, /products, /leads, /appointments CRUD", "#FEF3C7", "#D97706")
 
     # 3. Core AI & Reasoning Layer (Middle)
     draw_box(0.8, 3.1, 3.6, 1.25, "📚 TF-IDF & NumPy RAG", "8 Knowledge Base Docs\nCosine Relevance Retrieval", "#F8FAFC", "#64748B")
@@ -54,7 +54,7 @@ def draw_architecture():
     # 4. Analytics & Validation Engines (Middle-Bottom)
     draw_box(0.8, 1.4, 3.6, 1.1, "📊 Sentiment Engine", "Regex Word Boundary Tokenizer\nEscalation Alert Guard", "#FFF7ED", "#EA580C")
     draw_box(5.2, 1.4, 3.6, 1.1, "🎯 BANT Qualification", "Pydantic Models • 0-100 Score\nHOT / WARM / COLD Bands", "#FDF2F8", "#DB2777")
-    draw_box(9.6, 1.4, 3.6, 1.1, "📅 Appointment Engine", "Conflict Prevention Lock\nRFC 5545 .ICS File Generator", "#ECFEFF", "#0891B2")
+    draw_box(9.6, 1.4, 3.6, 1.1, "📅 Dual Appointment Engine", "Dedicated CRUD Portal + 5-Step Voice\nDouble-Booking Lock & .ICS Generator", "#ECFEFF", "#0891B2")
 
     # 5. Persistence Layer (Bottom)
     draw_box(3.5, 0.2, 7.0, 0.85, "🗄️ SQLite Database & CRM (electromart.db)", "Customers • Leads • Calls • Messages • Appointments • Call Summaries", "#F1F5F9", "#475569")

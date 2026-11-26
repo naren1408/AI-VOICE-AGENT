@@ -8,16 +8,16 @@ This guide enables you to explain every file and function in under 60 seconds an
 
 | File Path | 60-Second Explanation for Interviewer | Key Function / Variable to Show |
 | :--- | :--- | :--- |
-| `app.py` | **Streamlit SaaS Dashboard:** Clean 3-tab layout (Live Sales Call, Products & CRM, BI Insights). Manages conversation session state, microphone audio capture, live BANT score card, and `.ics` download. | `tab1, tab2, tab3 = st.tabs(...)`, `execute_sales_turn(...)` |
+| `app.py` | **Streamlit SaaS Dashboard:** Modern FinBank-inspired layout featuring a consistent left navigation sidebar across 7 views (Home Dashboard, AI Voice Assistance, Appointments & Booking, CRM & Leads, Knowledge Base & Catalog, Business Insights, Settings) and live CRM counters. | `selected_nav = st.radio(...)`, `execute_sales_turn(...)` |
 | `backend/main.py` | **FastAPI REST API:** Exposes production endpoints for `/health`, `/call/start`, `/call/{id}/text`, `/call/{id}/audio`, `/products`, `/leads`, `/appointments`, and `/insights`. Uses Pydantic schemas and CORS middleware. | `handle_text_turn(...)`, `handle_audio_turn(...)` |
 | `backend/config.py` | **Central Configuration:** Houses business constants, agent identity, Edge-TTS voice mapping, and OpenAI/LLM model names in one spot for live changes during the interview. | `OPENAI_MODEL_CHAT = "gpt-4o-mini"`, `TTS_VOICES` |
 | `backend/product_recommendation.py` | **Deterministic Recommendation Engine:** Parses budget (e.g. 70k, 1 lakh) and intent (coding, student, gaming) from natural language; scores and filters catalog records from `products.csv`. Never allows LLM hallucination. | `recommend_products(...)`, `parse_budget_from_text(...)` |
 | `backend/rag.py` | **TF-IDF & NumPy RAG Engine:** Ingests all 8 knowledge base text files, chunks paragraphs, and performs cosine similarity vector search using NumPy. Runs 100% offline with zero external model downloads. | `ElectroMartRAG.retrieve(...)`, `get_context(...)` |
 | `backend/lead_qualification.py` | **BANT Lead Scoring:** Extracts requirement, budget, timeline, contact, and intent using regex. Calculates 0–100 score based on 5 weighted criteria and classifies into HOT, WARM, or COLD. | `LEAD_SCORING_WEIGHTS`, `extract_lead_from_conversation(...)` |
 | `backend/sentiment.py` | **Word-Boundary Sentiment Engine:** Evaluates customer sentiment (-1.0 to 1.0). Uses regex word boundaries (`\b`) to eliminate false-negative triggers from sub-words. Detects human supervisor escalation flags. | `analyze_sentiment(...)`, `should_escalate(...)` |
-| `backend/appointment.py` | **Appointment Engine:** Validates showroom operating hours (10 AM to 8:30 PM), prevents duplicate customer bookings using database queries, and formats RFC 5545 `.ics` calendar content. | `book_appointment_in_db(...)`, `validate_appointment_slot(...)` |
-| `backend/speech_to_text.py` | **Speech-to-Text Module:** Interacts with OpenAI Whisper API or Free SpeechRecognition to transcribe inbound audio and detect spoken language (English/Telugu/Kannada). | `transcribe_audio_ai(...)` |
-| `backend/text_to_speech.py` | **Text-to-Speech Module:** Generates spoken audio using Microsoft Edge Neural voices (`en-IN-NeerjaNeural`, `hi-IN-SwaraNeural`). Generates unique file paths to eliminate Windows file-locking conflicts. | `text_to_speech(...)`, `_synthesize_async(...)` |
+| `backend/appointment.py` | **Dual-Engine Appointment System:** Dedicated manual booking portal (CRUD with edit and cancel) plus 5-step conversational voice booking flow. Validates operating hours (10 AM to 8:30 PM), prevents past dates and duplicate bookings, and formats RFC 5545 `.ics` invites. | `book_appointment_in_db(...)`, `update_appointment_in_db(...)`, `validate_appointment_slot(...)` |
+| `backend/speech_to_text.py` | **Speech-to-Text Module:** Interacts with OpenAI Whisper API or Free SpeechRecognition to transcribe inbound audio and detect spoken language (English/Telugu/Kannada/Hindi). | `transcribe_audio_ai(...)`, `transcribe_audio_free(...)` |
+| `backend/text_to_speech.py` | **Text-to-Speech Module:** Generates spoken audio using Microsoft Edge Neural voices (`en-IN-NeerjaNeural`, `te-IN-ShrutiNeural`, `kn-IN-SapnaNeural`, `hi-IN-SwaraNeural`). Generates unique file paths to eliminate Windows file-locking conflicts. | `text_to_speech(...)`, `_synthesize_async(...)` |
 | `backend/summarizer.py` | **Call Summarizer:** Aggregates customer requirements, category, budget, objections, lead score, and generates structured executive summary records in SQLite. | `generate_call_summary(...)` |
 | `backend/ai_agent.py` | **Agent Orchestrator:** Connects RAG, product recommendation, OpenAI LLM (or rule-based Demo Mode), lead qualification, and database persistence into an end-to-end sales turn. | `execute_sales_turn(...)`, `DEMO_REPLIES` |
 | `database/models.py` | **SQLAlchemy ORM Models:** Defines relational schema for `Customer`, `Lead`, `Call`, `Message`, `Appointment`, `RecommendedProduct`, and `CallSummary`. | `class Lead(Base)`, `class Appointment(Base)` |
@@ -52,16 +52,16 @@ This guide enables you to explain every file and function in under 60 seconds an
 Leads scoring 70–100 are HOT, 40–69 WARM, and 0–39 COLD.
 
 ### 7. How does the system handle multi-turn conversation memory?
-**Answer:** In `backend/ai_agent.py`, conversation history is passed into `execute_sales_turn(...)`. We maintain the last 10 turns (`MAX_HISTORY_TURNS = 10`) to provide conversational continuity without bloating token context windows.
+**Answer:** In `backend/ai_agent.py`, conversation history is passed into `execute_sales_turn(...)`. We maintain the last 10 turns (`MAX_HISTORY_TURNS = 10`) while tracking extracted entities (budget, category, purpose, customer name, phone, email, and multi-step booking state) across turns so the assistant never repeatedly asks for already provided details.
 
 ### 8. How did you prevent database conflicts and duplicate appointment bookings?
-**Answer:** In `backend/appointment.py`, before committing an appointment, the system executes an atomic query checking for existing confirmed bookings with matching customer email, date, and time slot. If an active slot exists, it rejects the request with a descriptive user message.
+**Answer:** In `backend/appointment.py`, before committing an appointment, the system executes an atomic query checking for existing active bookings with matching customer phone/email, date, and time slot. It also verifies operating hours (10:00 AM – 08:30 PM) and rejects past dates. If a slot is taken, it dynamically queries `get_available_slots(...)` and suggests available alternative times.
 
 ### 9. How do you generate calendar files?
 **Answer:** In `generate_ics_content(...)`, we construct an RFC 5545-compliant text string containing VCALENDAR and VEVENT blocks with UTC timestamps and unique UUIDs. Streamlit provides an instant download button for the generated `.ics` file.
 
-### 10. How do you support multilingual interaction (English, Telugu, and Kannada)?
-**Answer:** Gemini STT and SpeechRecognition identify language tags (`[LANG: en|te|kn]` / native Unicode script ranges `\u0C00-\u0C7F` for Telugu and `\u0C80-\u0CFF` for Kannada), the AI agent prompt instructs the model to respond in the user's language, and `backend/text_to_speech.py` routes Telugu text to `te-IN-ShrutiNeural`, Kannada to `kn-IN-SapnaNeural`, and English to `en-IN-NeerjaNeural`.
+### 10. How do you support multilingual interaction (English, Telugu, Kannada, and Hindi)?
+**Answer:** OpenAI Whisper and SpeechRecognition identify native Unicode script ranges (`\u0C00-\u0C7F` for Telugu, `\u0C80-\u0CFF` for Kannada, `\u0900-\u097F` for Hindi, and Latin for English) and transliterated keywords. The AI agent prompt instructs the model to respond in the user's language, and `backend/text_to_speech.py` routes text to Microsoft Edge Neural voices (`te-IN-ShrutiNeural`, `kn-IN-SapnaNeural`, `hi-IN-SwaraNeural`, and `en-IN-NeerjaNeural`). State is preserved even when customers switch languages mid-conversation.
 
 ### 11. How do you prevent Windows file-locking errors with Edge-TTS?
 **Answer:** In Windows, if an audio file is being played by the browser, writing to the same static path causes `[WinError 32] PermissionError`. We generate unique file paths per turn using `uuid.uuid4().hex[:8]`.

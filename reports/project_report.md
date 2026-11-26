@@ -9,14 +9,14 @@ In the multi-brand electronics retail sector, brick-and-mortar and omnichannel r
 2. **Inconsistent Consultation Quality:** Floor staff often push high-margin inventory rather than matching products to customers' precise technical needs and budget constraints.
 3. **Omnichannel Booking Gaps:** Lack of seamless bridge between online digital inquiries and physical showroom demo appointments.
 
-**ElectroMart India** solves these challenges with an autonomous AI sales voice advisor (`Anya`) that engages prospects in natural English, Telugu, and Kannada, grounds consultations strictly in verified product catalog specifications, provides deterministic budget-adherent recommendations, qualifies leads via BANT criteria, and schedules conflict-free showroom visits.
+**ElectroMart India** solves these challenges with an autonomous AI sales voice advisor (`Anya`) that engages prospects in natural English, Telugu, Kannada, and Hindi, grounds consultations strictly in verified product catalog specifications, provides deterministic budget-adherent recommendations, qualifies leads via BANT criteria, and schedules conflict-free showroom visits through both voice conversations and a dedicated manual booking portal.
 
 ---
 
 ## 2. Technical Architecture & Component Design
 The system utilizes a clean, decoupled full-stack architecture:
-- **Presentation Layer:** Streamlit enterprise dashboard (`app.py`) built with a light, clean SaaS aesthetic featuring 3 operational tabs: Live Sales Call, Products & CRM Pipeline, and Sales BI Insights.
-- **REST API Gateway:** FastAPI service (`backend/main.py`) exposing standardized endpoints (`/call/start`, `/call/{id}/text`, `/call/{id}/audio`, `/call/{id}/end`, `/products`, `/leads`, `/appointments`, `/insights`).
+- **Presentation Layer:** Modern FinBank-inspired Streamlit enterprise dashboard (`app.py`) built with a consistent SaaS aesthetic across 7 operational views: Home Dashboard, Live Sales Call, Appointments Portal (Manual Booking & CRUD), CRM Leads Pipeline, Knowledge Base & 25-Product Catalog, Sales BI Insights, and Settings.
+- **REST API Gateway:** FastAPI service (`backend/main.py`) exposing standardized endpoints (`/call/start`, `/call/{id}/text`, `/call/{id}/audio`, `/call/{id}/end`, `/products`, `/leads`, `/appointments` with CRUD, `/insights`).
 - **Intelligence & RAG Engine:** Multi-document TF-IDF vectorizer coupled with NumPy cosine similarity (`backend/rag.py`), ingesting 8 domain documents (company profile, catalog, pricing, policies, recommendation guides, FAQs, and comparisons). Optionally leverages OpenAI GPT-4o-mini & Whisper via `openai` SDK.
 - **Deterministic Recommendation Engine:** Source-of-truth matching logic (`backend/product_recommendation.py`) that strictly filters and scores catalog products without hallucination.
 - **Persistence Layer:** SQLite with SQLAlchemy ORM (`database/db.py`), auto-seeded with 25 products, 20 customers, 15 leads, and 10 appointments.
@@ -33,7 +33,7 @@ The system utilizes a clean, decoupled full-stack architecture:
    - Strong purchase intent: 20 pts
    - Priority Bands: **HOT** (70–100), **WARM** (40–69), **COLD** (0–39).
 3. **Word-Boundary Sentiment Analysis:** Evaluates customer sentiment (-1.0 to 1.0) using regex word boundaries (`\b`), preventing false negative escalations from substrings.
-4. **Conflict-Free Appointment Scheduling:** Real-time business hours validation (10:00 AM – 08:30 PM) and database locks preventing duplicate customer bookings, complete with RFC 5545 `.ics` file generation.
+4. **Dual-Engine Conflict-Free Appointment Scheduling:** Real-time business hours validation (10:00 AM – 08:30 PM), past-date prevention, database locks preventing duplicate customer bookings, dedicated manual booking portal with appointment CRUD (view, edit, cancel), and 5-step conversational voice booking flow with RFC 5545 `.ics` file generation.
 
 ---
 

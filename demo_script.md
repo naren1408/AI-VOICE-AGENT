@@ -47,18 +47,38 @@ Use this script during your placement interview to demonstrate the complete sale
 
 ---
 
-### Step 5: Store Visit & Appointment Booking
+---
+
+### Step 5: Conversational 5-Step Voice Appointment Booking
 **You (Customer):**
-> *"Can I visit your store tomorrow?"*
+> *"I want to book an appointment."*
 
 **Agent (Anya):**
-> *"Certainly! What time would be convenient for you?"*
+> *"Sure! I can help you book an appointment. Could you please fill in your basic details first (your name, phone number, and product of interest)?"*
 
 **You (Customer):**
-> *"4 PM. My name is Priya Patel, email is priya.patel@example.com, and phone is +91-98791-22334."*
+> *"My name is Priya Patel and my phone number is 9879122334. I am interested in CodeMaster Pro 15."*
 
 **Agent (Anya):**
-> *"Let me check availability and confirm your appointment. Confirmed for tomorrow at 4:00 PM at our showroom! [System: Store demo confirmed for 29 November at 04:00 PM. Calendar invite ready.]"*
+> *"Thank you, Priya Patel! What date and time would you prefer for your appointment?"*
+
+**You (Customer):**
+> *"Tomorrow at 4:00 PM."*
+
+**Agent (Anya):**
+> *"Where would you like to have the appointment? Would you prefer a store visit, an online consultation, or a callback?"*
+
+**You (Customer):**
+> *"Store visit in Mumbai showroom."*
+
+**Agent (Anya):**
+> *"Let me confirm your appointment: Priya Patel, [Tomorrow's Date], 04:00 PM, Store Visit, ElectroMart Experience Centre, Flagship Store, Mumbai. Is everything correct?"*
+
+**You (Customer):**
+> *"Yes, confirm!"*
+
+**Agent (Anya):**
+> *"Your appointment has been successfully booked. Booking ID: **APT-XXXXXX**. You will receive the confirmation details shortly."*
 *(Lead Score jumps to **HOT (95/100)**; green appointment confirmation banner appears; **Download .ICS Invite** button becomes clickable).*
 
 ---
@@ -72,8 +92,35 @@ Use this script during your placement interview to demonstrate the complete sale
    - Lead Status: HOT (95/100)
    - Appointment: Store Visit confirmed
    - Recommended Next Action: Priority follow-up within 24 hours.
-3. Switch to **Tab 2: Products, Leads & Appointments** to see the newly booked appointment and updated lead in the SQLite CRM!
-4. Switch to **Tab 3: Sales Insights** to view updated aggregate analytics!
+3. Open **📅 Appointments & Booking** from the left navigation sidebar to see the newly booked appointment in the database, or manage/edit it!
+4. Open **👥 CRM & Leads** to view the qualified lead profile!
+5. Open **📊 Business Insights** to view updated aggregate analytics!
+
+---
+
+## 🇮🇳 Accurate Product RAG Inquiries (Technical Specifications)
+
+### 1. Laptop Brands Available
+**Customer:** *"What brand laptops are available?"*  
+**Agent:** Lists our 7 catalog partner brands: **NovaCorp, Zenith, VoltTech, PulseGaming, Aura, Apex, and GreenTech** with price points and target users.
+
+### 2. Competitor Inquiries (HP / Dell / Apple)
+**Customer:** *"Do you have HP laptops?"*  
+**Agent:** Explains that ElectroMart carries curated partner brands and directly compares to equivalent catalog models (**CodeMaster Pro 15** or **ZenithBook Air 15**).
+
+### 3. Direct Specification Questions
+**Customer:** *"What is the RAM of CodeMaster Pro 15?"*  
+**Agent:** *"The ElectroMart catalog lists the **CodeMaster Pro 15** (NovaCorp) with **16GB DDR5**."*
+
+---
+
+## 🇮🇳 Hindi Scenario (हिंदी संवाद्)
+
+**Customer:**
+> *"नमस्ते, मुझे गेमिंग और कैमरा के लिए एक अच्छा स्मार्टफोन देखना है।"*
+
+**Agent (Anya):**
+> *"नमस्ते! गेमिंग और कैमरा के लिए Pulse Velocity 5G (₹16,999) और Zenith CamPro 5G (₹34,999) शानदार स्मार्टफोन हैं। क्या आप स्टोर विज़िट शेड्यूल करना चाहते हैं?"*
 
 ---
 

@@ -8,7 +8,7 @@
 [![SQLite](https://img.shields.io/badge/Database-SQLite_SQLAlchemy-003B57.svg?logo=sqlite&logoColor=white)](https://sqlite.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-An autonomous, multilingual B2B/B2C Electronics Retail Sales Voice Agent built for a senior AI engineering hiring challenge. The agent speaks with inbound shoppers, understands technical requirements, deterministically recommends products from a 25-item catalog using RAG, qualifies leads (0–100 BANT score + HOT/WARM/COLD bands), schedules showroom appointments, prevents double-booking, and synchronizes call summaries with an integrated SQLite CRM.
+An autonomous, multilingual B2B/B2C Electronics Retail Sales Voice Agent built for a senior AI engineering hiring challenge. The agent speaks with inbound shoppers in **English, Telugu, Kannada, and Hindi**, answers detailed product and competitor questions using RAG, deterministically recommends products from a 25-item catalog, qualifies leads (0–100 BANT score + HOT/WARM/COLD bands), provides dual-engine appointment booking (dedicated manual portal + 5-step conversational voice flow with slot conflict locks), and synchronizes call summaries with an integrated SQLite CRM.
 
 ---
 
@@ -37,7 +37,7 @@ An autonomous, multilingual B2B/B2C Electronics Retail Sales Voice Agent built f
     ┌──────────────┴─────────────────┐
     ▼                                ▼
 [Edge-TTS Neural Audio]      [Transactional Booking & CRM]
-(en-IN / te-IN / kn-IN)      (SQLite electromart.db + .ICS file)
+(en-IN / te-IN / kn-IN / hi) (SQLite electromart.db + .ICS file)
 ```
 
 ---
@@ -131,7 +131,7 @@ Follow the complete script in [`demo_script.md`](file:///f:/AI%20VOICE%20AGENT/d
 5. **Store Booking:** *"Can I visit your store tomorrow? 4 PM. My name is Priya Patel, email is priya.patel@example.com."*
    - Agent verifies showroom hours, prevents conflicts, books the slot, and outputs a downloadable `.ics` calendar invite.
    - Lead Score jumps to **HOT (95/100)**.
-6. **Summary & Insights:** Click **"⏹️ End Call & Generate Summary"** to inspect the structured executive summary card and view records in Tabs 2 & 3.
+6. **Summary & Insights:** Click **"⏹️ End Call & Generate Summary"** to inspect the structured executive summary card and view synchronized records in the **📅 Appointments & Booking** and **👥 CRM & Leads** navigation views.
 
 ---
 
@@ -151,26 +151,26 @@ Follow the complete script in [`demo_script.md`](file:///f:/AI%20VOICE%20AGENT/d
 ## 📂 Project Structure
 ```
 AI-Sales-Voice-Agent/
-├── app.py                      # Streamlit UI (3 Tabs: Live Call, Products & CRM, BI Insights)
+├── app.py                      # Streamlit SaaS Dashboard (FinBank design with 7 navigation views)
 ├── requirements.txt            # Pinned dependencies
 ├── .env                        # Environment variables (OPENAI_API_KEY)
 ├── .env.example
 ├── .gitignore
 ├── .streamlit/config.toml      # Polished light theme styling
-├── demo_script.md              # Exact English, Telugu, and Kannada scenario transcripts
+├── demo_script.md              # Exact English, Telugu, Kannada, and Hindi scenario transcripts
 ├── README.md                   # Complete documentation
 │
 ├── backend/
-│   ├── main.py                 # FastAPI endpoints & CORS
-│   ├── config.py               # Central model names, voices & business parameters
-│   ├── ai_agent.py             # Agent orchestrator & offline demo mode
+│   ├── main.py                 # FastAPI endpoints (Call turns, Products, Leads, Appointments CRUD)
+│   ├── config.py               # Central model names, voices (en, te, kn, hi) & business parameters
+│   ├── ai_agent.py             # Agent orchestrator, accurate product RAG & 5-step voice booking
 │   ├── product_recommendation.py# Deterministic recommendation engine
 │   ├── rag.py                  # TF-IDF & NumPy cosine similarity retrieval
 │   ├── lead_qualification.py   # BANT 0-100 scoring & Pydantic models
 │   ├── sentiment.py            # Word-boundary sentiment engine (-1 to 1)
-│   ├── appointment.py          # Operating hours check, conflict lock & .ics generator
-│   ├── speech_to_text.py       # OpenAI Whisper / Free STT
-│   ├── text_to_speech.py       # Edge-TTS multi-voice synthesis
+│   ├── appointment.py          # Showroom operating hours, double-booking lock, CRUD & .ics generator
+│   ├── speech_to_text.py       # OpenAI Whisper / Free STT with 4-language detection
+│   ├── text_to_speech.py       # Edge-TTS multi-voice neural synthesis
 │   └── summarizer.py           # Structured executive call summary generator
 │
 ├── database/
@@ -207,5 +207,5 @@ AI-Sales-Voice-Agent/
 │   └── system_architecture.png # Generated architecture visualization
 │
 └── tests/
-    └── test_core.py            # 13 automated Pytest test cases
+    └── test_core.py            # 17 automated Pytest test cases
 ```

@@ -292,9 +292,9 @@ def test_conversational_edge_cases():
     assert "ನಮಸ್ಕಾರ" in r7["reply"]
     assert r7["language"] == "kn"
 
-    # 8. Appointment Request (must offer to schedule appointment, no raw FAQ dump)
+    # 8. Appointment Request (must initiate conversational 5-step flow, no raw FAQ dump)
     r8 = execute_sales_turn("TEST-APPT-REQ", "can I have an appointment for this product")
-    assert "delighted to schedule a hands-on showroom appointment" in r8["reply"]
+    assert "help you book an appointment" in r8["reply"].lower() or "basic details" in r8["reply"].lower()
     assert "Category: Appointment" not in r8["reply"]
 
 

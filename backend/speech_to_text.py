@@ -80,7 +80,3 @@ def transcribe_audio_ai(audio_path: str, client=None) -> Tuple[str, str]:
 
     # If audio was recorded but completely unintelligible / silence, return default demo query
     return "I am looking for a laptop under ₹70,000 for programming.", "en"
-
-
-# Backward-compatible alias
-transcribe_audio_gemini = transcribe_audio_ai

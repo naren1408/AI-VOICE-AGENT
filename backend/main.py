@@ -14,10 +14,10 @@ from sqlalchemy.orm import Session
 
 from database.db import get_db, init_db
 from database.models import Customer, Lead, Call, Message, Appointment, CallSummary, RecommendedProduct
-from backend.ai_agent import execute_sales_turn, is_demo_mode, get_ai_client, get_gemini_client
+from backend.ai_agent import execute_sales_turn, is_demo_mode, get_ai_client
 from backend.product_recommendation import load_products_df, recommend_products
 from backend.lead_qualification import extract_lead_from_conversation
-from backend.speech_to_text import transcribe_audio_ai, transcribe_audio_gemini
+from backend.speech_to_text import transcribe_audio_ai
 from backend.text_to_speech import text_to_speech
 from backend.appointment import (
     book_appointment_in_db, update_appointment_in_db, cancel_appointment_in_db,
