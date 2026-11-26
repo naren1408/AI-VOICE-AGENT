@@ -1,28 +1,33 @@
 """
 ElectroMart India — AI Sales Voice Agent Orchestrator
-Coordinates RAG context retrieval, catalog product recommendations, OpenAI LLM reasoning
-(with comprehensive rule-based Demo Mode fallback), BANT lead scoring, sentiment tracking, and booking.
+Coordinates RAG context retrieval, accurate product catalog question answering,
+OpenAI LLM reasoning (with robust rule-based Demo Mode fallback), BANT lead scoring,
+sentiment tracking, and multi-step conversational appointment booking.
 """
 import os
 import re
 import time
-from typing import List, Dict, Optional, Tuple
+import datetime
+from typing import List, Dict, Optional, Tuple, Any
 from dotenv import load_dotenv
 
 from backend.config import (
     COMPANY_NAME, AGENT_NAME, OPENAI_MODEL_CHAT, OPENAI_BASE_URL,
-    MAX_HISTORY_TURNS, AGENT_ROLE_DESCRIPTION
+    MAX_HISTORY_TURNS, AGENT_ROLE_DESCRIPTION, SHOWROOM_CITIES
 )
 from backend.rag import rag_engine
 from backend.product_recommendation import (
-    recommend_products, format_recommendations_for_agent,
+    load_products_df, recommend_products, format_recommendations_for_agent,
     parse_budget_from_text, detect_category
 )
 from backend.lead_qualification import extract_lead_from_conversation, extract_customer_name, ExtractedLead
 from backend.sentiment import analyze_sentiment, should_escalate
-from backend.appointment import parse_natural_datetime, book_appointment_in_db, generate_ics_content
-from database.db import SessionLocal, init_db
-from database.models import Customer, Lead, Call, Message, RecommendedProduct
+from backend.appointment import (
+    parse_natural_datetime, book_appointment_in_db, get_available_slots,
+    generate_ics_content
+)
+from database.db import SessionLocal
+from database.models import Customer, Lead, Call, Message, RecommendedProduct, Appointment
 
 load_dotenv()
 
@@ -31,17 +36,21 @@ ELECTROMART_SYSTEM_PROMPT = f"""
 {AGENT_ROLE_DESCRIPTION}
 
 GUIDELINES FOR CONVERSATION:
-1. Greet the customer warmly and politely in English, Telugu, or Kannada (match customer language).
+1. Greet the customer warmly and politely in English, Telugu, Kannada, or Hindi (match customer language).
 2. Understand what they are looking for (laptops, smartphones, tablets, or accessories).
-3. Ask about their budget and intended use (e.g. programming, gaming, students, office, photography).
-4. Recommend products ONLY from the provided CATALOG RECOMMENDATIONS context. Do not invent products or prices.
-5. Explain clearly why each recommended product suits their needs.
-6. Answer questions about pricing, warranty, delivery, GST, and return policies using the KNOWLEDGE BASE context.
-7. Offer to arrange a showroom visit or consultation demo.
-8. Keep answers concise, consultative, and professional (under 3-4 sentences per turn).
+3. If the customer asks specific product questions (e.g. brands available, RAM, processor, storage, price, warranty, stock), ANSWER DIRECTLY and accurately using the KNOWLEDGE BASE and CATALOG data. Do not deflect with generic recommendations unless asked for recommendations.
+4. If asked about competitor brands (like HP, Dell, Lenovo, Apple), clarify that ElectroMart carries partner brands (VoltTech, Zenith, NovaCorp, Aura, PulseGaming, Apex, GreenTech) and offer the best catalog match.
+5. For recommendations, recommend products ONLY from the provided CATALOG RECOMMENDATIONS context. Do not invent products or prices.
+6. When a customer wants an appointment, follow the multi-step booking process:
+   - Step 1: Acknowledge and ask for basic details (name, phone, product).
+   - Step 2: Ask for preferred date and time.
+   - Step 3: Ask for appointment type/location (Store visit, Online consultation, Callback).
+   - Step 4: Confirm all details before booking.
+   - Step 5: Confirm booking only after database verification.
+7. Keep answers concise, consultative, and professional (under 3-4 sentences per turn).
 """
 
-# Realistic Demo Mode response bank for offline testing
+# Demo mode responses for offline testing
 DEMO_REPLIES = {
     "greeting": f"Hello! Welcome to {COMPANY_NAME}. I'm {AGENT_NAME}, your AI electronics sales advisor. Are you looking for laptops, smartphones, tablets, or accessories today?",
     "programming_laptop": (
@@ -88,7 +97,7 @@ DEMO_REPLIES = {
     ),
     "store_visit": (
         "Certainly! I would be delighted to schedule a hands-on showroom appointment for you to test this in person. "
-        "What date and time would be convenient for your visit (e.g. tomorrow at 4:00 PM), and which city showroom would you like to visit?"
+        "Could you please share your basic details (your name, phone number, and product of interest) so I can get that set up?"
     ),
     "store_hours": (
         "ElectroMart showrooms are open Monday through Sunday from 10:00 AM to 08:30 PM. "
@@ -142,6 +151,18 @@ DEMO_REPLIES = {
     "kannada_phone": (
         "ನಮಸ್ಕಾರ! ಗೇಮಿಂಗ್ ಮತ್ತು ದೈನಂದಿನ ಬಳಕೆಗಾಗಿ Pulse Velocity 5G (₹16,999) ಹಾಗೂ Volt PowerMax 5G (₹13,999) "
         "ಅತ್ಯುತ್ತಮ ಸ್ಮಾರ್ಟ್‌ಫೋನ್‌ಗಳಾಗಿವೆ. ನೀವು ನಮ್ಮ ಬೆಂಗಳೂರು ಶೋರೂಂ ಭೇಟಿ ಬುಕ್ ಮಾಡಲು ಬಯಸುವಿರಾ?"
+    ),
+    "hindi_greeting": (
+        "नमस्ते! इलेक्ट्रोमार्ट इंडिया में आपका स्वागत है। मैं अन्या, आपकी AI इलेक्ट्रॉनिक्स सेल्स सलाहकार हूँ। "
+        "क्या आप लैपटॉप, स्मार्टफोन, टैबलेट या एक्सेसरीज़ की तलाश में हैं?"
+    ),
+    "hindi_laptop": (
+        "नमस्ते! कोडिंग और ऑफिस के काम के लिए ZenithBook Air 15 (₹48,999) और CodeMaster Pro 15 (₹64,999) "
+        "बेहतरीन विकल्प हैं। इनमें 16GB RAM और पावरफुल प्रोसेसर मिलता है। क्या आप स्टोर डेमो देखना चाहेंगे?"
+    ),
+    "hindi_phone": (
+        "नमस्ते! गेमिंग और कैमरा के लिए Pulse Velocity 5G (₹16,999) और Zenith CamPro 5G (₹34,999) "
+        "शानदार स्मार्टफोन हैं। क्या आप स्टोर विज़िट शेड्यूल करना चाहते हैं?"
     )
 }
 
@@ -174,26 +195,403 @@ def _clean_rag_chunk_for_speech(chunk: str) -> str:
     clean = re.sub(r"\[.*?\.txt\]", "", chunk)
     clean = re.sub(r"#{1,6}\s*", "", clean)
     clean = clean.replace("**", "").replace("- ", "").strip()
-    
-    # If the chunk has FAQ structure "Q: ... Answer: ...", strip out the prompt artifacts and take the answer
     if "Answer:" in clean:
         clean = clean.split("Answer:", 1)[1].strip()
     elif "answer:" in clean:
         clean = clean.split("answer:", 1)[1].strip()
 
-    # Return first 2 concise sentences
     sentences = [s.strip() for s in clean.split(".") if s.strip()]
     if sentences:
         return ". ".join(sentences[:2]) + "."
     return clean[:200]
 
 
+def find_catalog_product(query_text: str, history: Optional[List[Dict]] = None) -> Optional[Dict]:
+    """Identify which catalog product is being discussed in the query or recent conversation."""
+    df_p = load_products_df()
+    q_low = query_text.lower()
+
+    # 1. Exact or partial match in current turn
+    for _, row in df_p.iterrows():
+        p_name = row["product_name"].lower()
+        p_id = row["product_id"].lower()
+        if p_name in q_low or p_id in q_low:
+            return row.to_dict()
+
+    # Match key product tokens
+    token_map = {
+        "voltbook": "VoltBook Student 14",
+        "zenithbook": "ZenithBook Air 15",
+        "codemaster": "CodeMaster Pro 15",
+        "devforge": "DevForge Extreme 16",
+        "omnibook": "OmniBook Slim 13",
+        "cyberpulse": "CyberPulse G15",
+        "studiocraft": "StudioCraft Pro 16",
+        "ecobook": "EcoBook Lite 15",
+        "campro": "Zenith CamPro 5G",
+        "velocity": "Pulse Velocity 5G",
+        "powermax": "Volt PowerMax 5G",
+        "flagship x": "Aura Flagship X",
+        "titan fold": "Titan Fold Z",
+        "tabstudy": "TabStudy 10.1",
+        "novapad": "NovaPad Air 11",
+        "pad creator": "Zenith Pad Creator 12",
+        "soundbeats": "Aura SoundBeats ANC Headset",
+        "mechkeys": "MechKeys RGB Wireless Mechanical Keyboard",
+        "precisionglide": "PrecisionGlide Ergonomic Wireless Mouse"
+    }
+    for token, full_name in token_map.items():
+        if token in q_low:
+            match = df_p[df_p["product_name"] == full_name]
+            if not match.empty:
+                return match.iloc[0].to_dict()
+
+    # 2. Check history for previously discussed product
+    if history:
+        for h in reversed(history):
+            content = h.get("content", "").lower()
+            for token, full_name in token_map.items():
+                if token in content:
+                    match = df_p[df_p["product_name"] == full_name]
+                    if not match.empty:
+                        return match.iloc[0].to_dict()
+
+    # Default to our premier developer laptop if discussing "this laptop" without explicit mention
+    if any(w in q_low for w in ["this laptop", "the laptop"]):
+        match = df_p[df_p["product_id"] == "LAP-103"]
+        if not match.empty:
+            return match.iloc[0].to_dict()
+
+    return None
+
+
+def answer_direct_product_question(user_input: str, history: Optional[List[Dict]] = None) -> Optional[str]:
+    """
+    Directly answer specific product questions regarding brands, RAM, processor,
+    storage, graphics, price, warranty, stock, and competitors.
+    """
+    t = user_input.lower()
+    df_p = load_products_df()
+
+    # Direct appointment request from customer
+    if any(w in t for w in ["an appointment", "appointment for this", "visit your store", "book an appointment", "take an appointment", "showroom appointment"]):
+        return DEMO_REPLIES["store_visit"]
+
+    # --- 1. Brands Inquiries ---
+    # E.g. "what brand laptops are available", "what brands of laptops do you sell"
+    if any(w in t for w in ["brand", "brands"]) and any(w in t for w in ["laptop", "laptops", "notebook"]):
+        return (
+            f"At {COMPANY_NAME}, we carry **7 verified laptop brands** across all use cases:\n\n"
+            "1. **NovaCorp** — Professional developer workhorses (CodeMaster Pro 15 ₹64,999, DevForge Extreme 16 ₹79,999).\n"
+            "2. **Zenith** — Premium slim aluminum notebooks (ZenithBook Air 15 ₹48,999).\n"
+            "3. **VoltTech** — Affordable student & education laptops (VoltBook Student 14 ₹34,999).\n"
+            "4. **PulseGaming** — High-performance RTX 4060 gaming laptops (CyberPulse G15 ₹94,999).\n"
+            "5. **Aura** — Ultra-thin 2.8K OLED executive ultrabooks (OmniBook Slim 13 ₹89,999).\n"
+            "6. **Apex** — 4K Mini-LED studio creator workstations (StudioCraft Pro 16 ₹1,49,999).\n"
+            "7. **GreenTech** — Budget eco-friendly computing (EcoBook Lite 15 ₹24,999).\n\n"
+            "Which brand or specific requirement would you like to explore?"
+        )
+
+    if any(w in t for w in ["brand", "brands"]) and any(w in t for w in ["phone", "phones", "smartphone", "smartphones"]):
+        return (
+            f"For smartphones, {COMPANY_NAME} offers **7 top models** from 6 trusted brands:\n\n"
+            "• **ApexMobile** — Apex Phone Neo 5G (₹11,999)\n"
+            "• **PulseMobile** — Pulse Velocity 5G 120Hz AMOLED (₹16,999)\n"
+            "• **VoltTech** — Volt PowerMax 5G with monster 6000mAh battery (₹13,999)\n"
+            "• **NovaCorp** — Nova Edge 11 Pro with 80W charging (₹27,999)\n"
+            "• **Zenith** — Zenith CamPro 5G with 50MP Sony OIS (₹34,999)\n"
+            "• **Aura & TitanMobile** — Aura Flagship X (₹64,999) and Titan Fold Z (₹1,24,999)."
+        )
+
+    # --- 2. Competitor Brands (HP, Dell, Lenovo, Apple/MacBook) ---
+    if any(b in t for b in ["hp", "hewlett packard", "dell", "lenovo", "thinkpad", "macbook", "apple"]):
+        return (
+            f"At {COMPANY_NAME}, we specialize in our curated direct-manufacturer retail brands: "
+            f"**NovaCorp, Zenith, VoltTech, PulseGaming, Aura, and Apex**.\n\n"
+            f"We do not stock HP or Dell laptops, but our **CodeMaster Pro 15 (₹64,999)** and "
+            f"**ZenithBook Air 15 (₹48,999)** offer equivalent or superior 16GB DDR5 memory, "
+            f"Intel 13th Gen / AMD Ryzen processors, and comprehensive on-site warranties at significantly better value! "
+            f"Would you like to compare their specifications?"
+        )
+
+    # --- 3. Which Brand is Better for Programming ---
+    if ("programming" in t or "coding" in t or "developer" in t) and ("which brand" in t or "better brand" in t or "best brand" in t):
+        return (
+            "For programming and software development, **NovaCorp** is our top-rated brand! "
+            "Their **CodeMaster Pro 15 (₹64,999)** is built specifically for coders with an Intel Core i5 13500H processor, "
+            "16GB DDR5 RAM, and a crisp 2K 100% sRGB display. For heavy Docker, mobile emulation, and ML workloads, "
+            "the **DevForge Extreme 16 (₹79,999)** adds an AMD Ryzen 7 and dedicated RTX 3050 GPU."
+        )
+
+    # --- 4. Product Specific Specifications Lookup ---
+    prod = find_catalog_product(user_input, history)
+    if prod:
+        p_name = prod["product_name"]
+        p_brand = prod["brand"]
+
+        # RAM Question
+        if any(w in t for w in ["ram", "memory", "16 gb", "16gb", "8 gb", "8gb", "32 gb", "32gb"]):
+            if "16 gb" in t or "16gb" in t:
+                if "16gb" in prod["ram"].lower():
+                    return f"Yes! The ElectroMart catalog lists the **{p_name}** ({p_brand}) with **{prod['ram']}**."
+                else:
+                    return f"The **{p_name}** comes standard with **{prod['ram']}**. If you need 16GB RAM, our **ZenithBook Air 15 (₹48,999)** and **CodeMaster Pro 15 (₹64,999)** come standard with 16GB RAM."
+            return f"The ElectroMart catalog lists the **{p_name}** ({p_brand}) with **{prod['ram']}**."
+
+        # Processor Question
+        if any(w in t for w in ["processor", "cpu", "chipset", "which processor", "what processor"]):
+            return f"The **{p_name}** is powered by the **{prod['processor']}** processor."
+
+        # Storage Question
+        if any(w in t for w in ["storage", "ssd", "hard drive", "capacity", "disk", "nvme"]):
+            return f"The ElectroMart catalog lists the **{p_name}** with **{prod['storage']}**."
+
+        # Graphics Question
+        if any(w in t for w in ["graphics", "gpu", "rtx", "geforce", "nvidia", "radeon", "graphics card"]):
+            return f"The **{p_name}** features **{prod['graphics']}** graphics."
+
+        # Price Question
+        if any(w in t for w in ["price", "cost", "how much is", "how much does it cost", "rate"]):
+            return f"The official price of the **{p_name}** is **₹{prod['price_inr']:,}** (inclusive of all taxes, with 0% EMI available)."
+
+        # Warranty Question
+        if any(w in t for w in ["warranty", "guarantee"]):
+            return f"The **{p_name}** comes with official **{prod['warranty']}**, backed by our 7-day doorstep replacement policy."
+
+        # Stock Question
+        if any(w in t for w in ["in stock", "stock status", "available", "inventory"]):
+            return f"The **{p_name}** is currently **{prod['stock_status']}** across our showrooms."
+
+        # Display Question
+        if any(w in t for w in ["display", "screen", "resolution"]):
+            return f"The **{p_name}** features a **{prod['display']}** display."
+
+        # Battery Question
+        if any(w in t for w in ["battery", "battery life", "battery backup"]):
+            return f"The **{p_name}** delivers **{prod['battery']}**."
+
+    return None
+
+
+def _handle_voice_appointment_flow(
+    user_input: str,
+    history: List[Dict],
+    booking_state: Dict,
+    language: str = "en"
+) -> Tuple[Optional[str], Optional[Dict], Optional[str]]:
+    """
+    Executes the 6-step conversational voice appointment booking sequence.
+    Returns: (agent_reply, booking_result, ics_content)
+    """
+    lower_input = user_input.lower()
+    db = SessionLocal()
+
+    try:
+        current_step = booking_state.get("step")
+
+        # Step 1: Detect Appointment Booking Intent
+        is_appt_request = bool(re.search(
+            r"\b(book\s+(?:an\s+)?appointment|take\s+(?:an\s+)?appointment|want\s+(?:an\s+)?appointment|"
+            r"need\s+(?:an\s+)?appointment|schedule\s+(?:an\s+)?appointment|appointment\s+booking|visit\s+store|"
+            r"showroom\s+visit|store\s+demo)\b", lower_input
+        )) or any(w in lower_input for w in ["అపాయింట్‌మెంట్", "అపాయింట్మెంట్", "ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್", "अपॉइंटमेंट"])
+
+        if current_step is None and is_appt_request:
+            # Check what information is already in state or conversation
+            all_hist = " ".join([h.get("content", "") for h in history]) + " " + user_input
+            extracted = extract_lead_from_conversation(all_hist)
+
+            if extracted.name: booking_state["name"] = extracted.name
+            if extracted.phone: booking_state["phone"] = extracted.phone
+            if extracted.email: booking_state["email"] = extracted.email
+            if extracted.city: booking_state["city"] = extracted.city
+            if extracted.interested_category: booking_state["product"] = extracted.interested_category
+
+            # If name or contact is missing, ask for basic details
+            if not booking_state.get("name") or not (booking_state.get("phone") or booking_state.get("email")):
+                booking_state["step"] = "collect_details"
+                if language == "te":
+                    return "ఖచ్చితంగా! నేను అపాయింట్‌మెంట్ బుక్ చేయడంలో మీకు సహాయపడతాను. దయచేసి మీ ప్రాథమిక వివరాలు (పేరు, ఫోన్ నంబర్ మరియు ఆసక్తి ఉన్న ఉత్పత్తి) చెప్పండి.", None, None
+                elif language == "kn":
+                    return "ಖಂಡಿತ! ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಲು ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡುತ್ತೇನೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಹೆಸರು, ಫೋನ್ ಸಂಖ್ಯೆ ಮತ್ತು ಆಸಕ್ತಿಯಿರುವ ಉತ್ಪನ್ನ ತಿಳಿಸಿ.", None, None
+                elif language == "hi":
+                    return "ज़रूर! मैं अपॉइंटमेंट बुक करने में आपकी मदद कर सकती हूँ। कृपया पहले अपना नाम, फ़ोन नंबर और पसंद का प्रोडक्ट बताएं।", None, None
+                else:
+                    return "Sure! I can help you book an appointment. Could you please fill in your basic details first (your name, phone number, and product of interest)?", None, None
+            else:
+                # Basic details already present! Advance to asking time
+                booking_state["step"] = "ask_time"
+                if language == "te":
+                    return f"ధన్యవాదాలు {booking_state['name']}! మీ అపాయింట్‌మెంట్ కోసం మీరు ఏ తేదీ మరియు సమయాన్ని ఇష్టపడతారు?", None, None
+                elif language == "kn":
+                    return f"ಧನ್ಯವಾದಗಳು {booking_state['name']}! ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ ನೀವು ಯಾವ ದಿನಾಂಕ ಮತ್ತು ಸಮಯವನ್ನು ಆದ್ಯತೆ ನೀಡುತ್ತೀರಿ?", None, None
+                elif language == "hi":
+                    return f"धन्यवाद {booking_state['name']}! आप अपनी अपॉइंटमेंट के लिए कौन सी तारीख और समय पसंद करेंगे?", None, None
+                else:
+                    return f"Thank you, {booking_state['name']}! What date and time would you prefer for your appointment?", None, None
+
+        # Step 2: Collecting Customer Details
+        if current_step == "collect_details":
+            extracted = extract_lead_from_conversation(user_input)
+            if extracted.name: booking_state["name"] = extracted.name
+            if extracted.phone: booking_state["phone"] = extracted.phone
+            if extracted.email: booking_state["email"] = extracted.email
+            if extracted.interested_category: booking_state["product"] = extracted.interested_category
+
+            # Also check for name regex if not caught
+            name_cand = extract_customer_name(user_input)
+            if name_cand: booking_state["name"] = name_cand
+
+            # Check phone regex
+            m_ph = re.search(r"(\+?\d{1,3}[-.\s]?)?(\d{10}|\d{5}[-.\s]?\d{5})", user_input)
+            if m_ph: booking_state["phone"] = m_ph.group(0).replace(" ", "").replace("-", "")
+
+            # If still missing name
+            if not booking_state.get("name"):
+                return "May I have your name, please?", None, None
+            # If missing contact
+            if not booking_state.get("phone") and not booking_state.get("email"):
+                return f"Thank you {booking_state['name']}! What is your phone number or email address?", None, None
+
+            # Both captured! Advance to asking time
+            booking_state["step"] = "ask_time"
+            if language == "te":
+                return f"ధన్యవాదాలు {booking_state['name']}! మీ అపాయింట్‌మెంట్ కోసం మీరు ఏ తేదీ మరియు సమయాన్ని ఇష్టపడతారు?", None, None
+            elif language == "kn":
+                return f"ಧನ್ಯವಾದಗಳು {booking_state['name']}! ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಾಗಿ ನೀವು ಯಾವ ದಿನಾಂಕ ಮತ್ತು ಸಮಯವನ್ನು ಆದ್ಯತೆ ನೀಡುತ್ತೀರಿ?", None, None
+            elif language == "hi":
+                return f"धन्यवाद {booking_state['name']}! आप अपनी अपॉइंटमेंट के लिए कौन सी तारीख और समय पसंद करेंगे?", None, None
+            else:
+                return f"Thank you, {booking_state['name']}! What date and time would you prefer for your appointment?", None, None
+
+        # Step 3: Ask Appointment Time
+        if current_step == "ask_time":
+            target_date, target_time_str = parse_natural_datetime(user_input)
+            booking_state["date"] = target_date.strftime("%Y-%m-%d")
+            booking_state["time"] = target_time_str
+            booking_state["step"] = "ask_location"
+
+            if language == "te":
+                return "మీరు అపాయింట్‌మెంట్ ఎక్కడ కోరుకుంటున్నారు? మీరు షోరూమ్ విజిట్, ఆన్‌లైన్ కన్సల్టేషన్ లేదా కాల్‌బ్యాక్‌ను ఇష్టపడతారా?", None, None
+            elif language == "kn":
+                return "ನೀವು ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಎಲ್ಲಿ ಬಯಸುತ್ತೀರಿ? ಶೋರೂಂ ಭೇಟಿ, ಆನ್‌ಲೈನ್ ಸಮಾಲೋಚನೆ ಅಥವಾ ಕಾಲ್‌ಬ್ಯಾಕ್ ಬಯಸುವಿರಾ?", None, None
+            elif language == "hi":
+                return "आप अपॉइंटमेंट कहाँ रखना चाहेंगे? क्या आप स्टोर विज़िट, ऑनलाइन कंसल्टेशन या कॉलबैक पसंद करेंगे?", None, None
+            else:
+                return "Where would you like to have the appointment? Would you prefer a store visit, an online consultation, or a callback?", None, None
+
+        # Step 4: Ask Location or Method
+        if current_step == "ask_location":
+            if any(w in lower_input for w in ["online", "video", "meet", "virtual"]):
+                appt_type = "Product Consultation"
+                location = "Online Video Consultation (Meeting link sent via SMS/Email)"
+            elif any(w in lower_input for w in ["callback", "call", "phone"]):
+                appt_type = "Sales Callback"
+                location = f"Phone Callback to {booking_state.get('phone', 'Registered Number')}"
+            else:
+                appt_type = "Store Visit"
+                city = booking_state.get("city") or "Mumbai"
+                for c in SHOWROOM_CITIES:
+                    if c.lower() in lower_input:
+                        city = c
+                        break
+                location = f"ElectroMart Experience Centre, Flagship Store, {city}"
+
+            booking_state["type"] = appt_type
+            booking_state["location"] = location
+            booking_state["step"] = "confirm"
+
+            cust_name = booking_state.get("name", "Valued Customer")
+            d_val = booking_state.get("date")
+            t_val = booking_state.get("time")
+
+            if language == "te":
+                return f"నేను మీ అపాయింట్‌మెంట్‌ను ధృవీకరిస్తున్నాను: {cust_name}, తేదీ: {d_val}, సమయం: {t_val}, రకం: {appt_type}, ప్రదేశం: {location}. అంతా సరిగ్గా ఉందా?", None, None
+            elif language == "kn":
+                return f"ನಾನು ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ದೃಢೀಕರಿಸುತ್ತಿದ್ದೇನೆ: {cust_name}, ದಿನಾಂಕ: {d_val}, ಸಮಯ: {t_val}, ಪ್ರಕಾರ: {appt_type}, ಸ್ಥಳ: {location}. ಎಲ್ಲವೂ ಸರಿಯಾಗಿದೆಯೇ?", None, None
+            elif language == "hi":
+                return f"मैं आपकी अपॉइंटमेंट की पुष्टि कर देती हूँ: {cust_name}, तारीख: {d_val}, समय: {t_val}, प्रकार: {appt_type}, स्थान: {location}। क्या सब कुछ सही है?", None, None
+            else:
+                return f"Let me confirm your appointment: {cust_name}, {d_val}, {t_val}, {appt_type}, {location}. Is everything correct?", None, None
+
+        # Step 5 & 6: Confirm and Save to Database
+        if current_step == "confirm":
+            is_confirmed = any(w in lower_input for w in [
+                "yes", "correct", "confirm", "proceed", "sounds good", "right", "sure",
+                "ok", "fine", "yep", "done", "perfect", "అవును", "సరే", "ಹೌದು", "ಸರಿ", "हाँ", "सही", "पक्का"
+            ])
+
+            if is_confirmed:
+                cust_name = booking_state.get("name") or "Valued Customer"
+                cust_email = booking_state.get("email") or "customer@example.com"
+                cust_phone = booking_state.get("phone")
+                d_val = datetime.datetime.strptime(booking_state["date"], "%Y-%m-%d").date()
+                t_val = booking_state["time"]
+                appt_type = booking_state.get("type", "Store Visit")
+                city = booking_state.get("city") or "Mumbai"
+                location = booking_state.get("location")
+                prod_name = booking_state.get("product") or "Electronics Consultation"
+
+                ok, b_msg, appt = book_appointment_in_db(
+                    db=db,
+                    customer_name=cust_name,
+                    customer_email=cust_email,
+                    customer_phone=cust_phone,
+                    date_val=d_val,
+                    time_str=t_val,
+                    appointment_type=appt_type,
+                    interested_product=prod_name,
+                    city=city,
+                    location=location,
+                    notes="Booked via Multi-Step AI Voice Assistant"
+                )
+
+                if ok:
+                    booking_state["step"] = "booked"
+                    booking_result = {
+                        "status": "success",
+                        "appointment_id": appt.appointment_id,
+                        "date": booking_state["date"],
+                        "time": t_val,
+                        "location": location,
+                        "message": b_msg
+                    }
+                    ics_data = generate_ics_content(cust_name, d_val, t_val, prod_name, location)
+                    if language == "te":
+                        reply = f"మీ అపాయింట్‌మెంట్ విజయవంతంగా బుక్ చేయబడింది. బుకింగ్ ID: **{appt.appointment_id}**. మీరు త్వరలో ధృవీకరణ వివరాలను అందుకుంటారు."
+                    elif language == "kn":
+                        reply = f"ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಯಶಸ್ವಿಯಾಗಿ ಬುಕ್ ಆಗಿದೆ. ಬುಕಿಂಗ್ ID: **{appt.appointment_id}**. ನೀವು ಶೀಘ್ರದಲ್ಲೇ ದೃಢೀಕರಣ ವಿವರಗಳನ್ನು ಸ್ವೀಕರಿಸುತ್ತೀರಿ."
+                    elif language == "hi":
+                        reply = f"आपकी अपॉइंटमेंट सफलतापूर्वक बुक हो गई है। बुकिंग ID: **{appt.appointment_id}**। आपको जल्द ही विवरण प्राप्त हो जाएगा।"
+                    else:
+                        reply = f"Your appointment has been successfully booked. Booking ID: **{appt.appointment_id}**. You will receive the confirmation details shortly."
+                    return reply, booking_result, ics_data
+                else:
+                    # Slot conflict, offer alternatives
+                    avail_slots = get_available_slots(db, d_val, city)
+                    alt_text = f" Available alternative slots: {', '.join(avail_slots[:3])}." if avail_slots else ""
+                    booking_state["step"] = "ask_time"
+                    return f"I apologize, {b_msg}.{alt_text} Which slot would you prefer instead?", None, None
+            else:
+                # Customer wants to change something
+                booking_state["step"] = "ask_time"
+                return "No problem! Which date or time would you prefer instead?", None, None
+
+        return None, None, None
+    finally:
+        db.close()
+
+
 def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str:
     """Generate realistic rule-based reply matching ElectroMart scenarios."""
     t = user_input.lower()
 
-    # --- 0. Broad Catalog & Availability Inquiries ---
-    # E.g. "can you display the items that are available on this website", "what products are available"
+    # --- 0. Direct Product Specification or Brand Questions ---
+    direct_ans = answer_direct_product_question(user_input)
+    if direct_ans:
+        return direct_ans
+
+    # --- 0.1 Broad Catalog & Availability Inquiries ---
     if any(p in t for p in ["display the items", "available on this website", "items that are available", "what all products", "what products do you have", "show all products", "browse catalog", "full catalog", "what items are present", "what all do you sell"]):
         return (
             f"Welcome to {COMPANY_NAME}! We offer 25 top-rated electronics across 4 core categories:\n\n"
@@ -201,11 +599,10 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
             "2. 📱 **Smartphones (7 Models)** — 6000mAh monster battery (Volt PowerMax ₹13,999), 50MP Sony OIS Camera (Zenith CamPro ₹34,999), and Flagships (Aura Flagship X ₹64,999, Titan Fold Z ₹1,24,999).\n"
             "3. 📲 **Tablets (5 Models)** — E-learning & Students (TabStudy ₹14,999), 120Hz Media (NovaPad Air ₹24,999), and Stylus Creator pads (Zenith Pad Creator 12 ₹38,999).\n"
             "4. 🎧 **Accessories (5 Models)** — Mechanical keyboards (MechKeys ₹3,999), ergonomic mice (₹1,999), 100W GaN fast chargers (₹3,499), and ANC headphones (₹4,999).\n\n"
-            "You can explore and filter all 25 products with live price filters in the **'Products, Leads & Appointments'** tab above! Which category would you like to explore?"
+            "You can explore and filter all 25 products with live price filters in the **'Knowledge Base & Catalog'** tab! Which category would you like to explore?"
         )
 
-    # --- 0.1 Catalog Scope & Availability Depth Queries ---
-    # E.g. "there are only three phones available in this or there are more phones are available", "where only three smartphones available"
+    # Catalog Scope Queries
     if any(w in t for w in ["phone", "smartphone", "mobile"]) and any(w in t for w in ["only three", "only 3", "more phones", "how many", "all phones", "other phones", "more available", "where only", "why only"]):
         return (
             "We have a total of **7 smartphones** in our catalog! In addition to the three shown:\n"
@@ -213,34 +610,12 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
             "• **Zenith CamPro 5G** (₹34,999) — Triple 50MP Sony IMX sensors with Optical Image Stabilization (OIS).\n"
             "• **Aura Flagship X** (₹64,999) — Snapdragon 8 Gen 3 with 100x zoom and titanium build.\n"
             "• **Titan Fold Z** (₹1,24,999) — Dual 120Hz foldable screens for ultimate productivity.\n\n"
-            "You can also browse all 7 smartphones in detail with full specifications under the **'Products, Leads & Appointments'** tab!"
+            "You can browse all 7 smartphones in detail with full specifications under the **'Knowledge Base & Catalog'** tab!"
         )
 
-    if any(w in t for w in ["laptop", "laptops", "notebook"]) and any(w in t for w in ["only three", "only 3", "more laptops", "how many", "all laptops", "other laptops", "more available", "where only", "why only"]):
-        return (
-            "We carry **8 laptops** across every budget and use case!\n"
-            "• **SlimLite 13** (₹24,999) & **VoltBook Student 14** (₹34,999) for students.\n"
-            "• **ZenithBook Air 15** (₹48,999) & **OmniBook Flex 14 2-in-1** (₹54,999) for office and multitasking.\n"
-            "• **CodeMaster Pro 15** (₹64,999) & **DevForge Extreme 16** (₹79,999) for programming & Docker.\n"
-            "• **CyberPulse G15** (₹94,999) & **TitanBook Studio 16** (₹1,19,999) for RTX 4060/4070 gaming and 3D studio work.\n\n"
-            "You can view and filter all 8 models in the Products tab!"
-        )
-
-    if any(w in t for w in ["tablet", "tablets", "tab"]) and any(w in t for w in ["only three", "only 3", "more tablets", "how many", "all tablets", "other tablets", "more available", "where only", "why only"]):
-        return (
-            "We have **5 tablets** in our catalog:\n"
-            "• **MediaTab 8** (₹9,999) — Compact 8-inch for reading and streaming.\n"
-            "• **TabStudy 10.1** (₹14,999) — Student e-learning tablet.\n"
-            "• **NovaPad Air 11** (₹24,999) — 120Hz smooth display with quad speakers.\n"
-            "• **Zenith Pad Creator 12** (₹38,999) — 2.8K display with active magnetic pressure stylus included.\n"
-            "• **UltraSlate Pro 13** (₹59,999) — 13-inch OLED with Snapdragon X Elite for pro creative workflows!"
-        )
-
-    # --- 0.2 Personal introduction, name greetings & categories inquiry ---
-    # E.g. "my name is Sai Narayan and I need to know what categories are present and can you introduce yourself"
+    # Personal Introduction & Categories
     is_asking_intro = any(w in t for w in ["introduce yourself", "who are you", "what is your name", "tell me about yourself", "what are you", "introduce"])
     is_asking_categories = any(w in t for w in ["categories", "category", "what do you sell", "what products", "what do you offer", "what items", "what is present", "what are present"])
-
     user_name = extract_customer_name(user_input)
 
     if is_asking_intro or is_asking_categories or (user_name and not any(kw in t for kw in ["laptop", "phone", "tablet", "price", "70k", "70000", "35k", "visit", "tomorrow"])):
@@ -263,7 +638,7 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
         else:
             return greeting_prefix + f"Welcome to {COMPANY_NAME}! I'm {AGENT_NAME}. Are you looking for laptops, smartphones, tablets, or accessories today?"
 
-    # 1. Telugu Greeting / Query (Script or transliteration)
+    # 1. Telugu Queries
     if any("\u0C00" <= ch <= "\u0C7F" for ch in user_input) or any(w in t for w in ["namaskaram", "namaskaramu", "telugu", "bagundi", "kavali", "chudali", "dharalu", "dharam"]):
         if any(w in t for w in ["phone", "mobile", "ఫోన్", "స్మార్ట్", "speed"]):
             return DEMO_REPLIES["telugu_phone"]
@@ -271,7 +646,7 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
             return DEMO_REPLIES["telugu_laptop"]
         return DEMO_REPLIES["telugu_greeting"]
 
-    # 1.1 Kannada Greeting / Query (Script or transliteration)
+    # 1.1 Kannada Queries
     if any("\u0C80" <= ch <= "\u0CFF" for ch in user_input) or any(w in t for w in ["namaskara", "kannada", "chennagide", "beku", "nodabeku", "bele", "yavudu"]):
         if any(w in t for w in ["phone", "mobile", "ಫೋನ್", "ಸ್ಮಾರ್ಟ್"]):
             return DEMO_REPLIES["kannada_phone"]
@@ -279,12 +654,20 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
             return DEMO_REPLIES["kannada_laptop"]
         return DEMO_REPLIES["kannada_greeting"]
 
-    # 2. English Greeting (whole words only to prevent 'hi' matching 'sketching')
+    # 1.2 Hindi Queries
+    if any("\u0900" <= ch <= "\u097F" for ch in user_input) or any(w in t for w in ["namaste", "hindi", "kripya", "chahiye", "kitne", "daam", "kimat"]):
+        if any(w in t for w in ["phone", "mobile", "फ़ोन", "स्मार्टफोन"]):
+            return DEMO_REPLIES["hindi_phone"]
+        elif any(w in t for w in ["laptop", "coding", "computer", "लैपटॉप", "कंप्यूटर"]):
+            return DEMO_REPLIES["hindi_laptop"]
+        return DEMO_REPLIES["hindi_greeting"]
+
+    # 2. English Greeting
     if re.search(r"\b(hello|hi|hey|good morning|good afternoon|greetings)\b", t):
         if not any(kw in t for kw in ["tablet", "laptop", "phone", "price", "budget", "recommend", "under", "need", "looking", "sketching"]):
             return DEMO_REPLIES["greeting"]
 
-    # 2.5 Dynamic Recommendation Matching when user specified budget or non-laptop category
+    # Recommendations when user has budget or category intent
     has_budget = parse_budget_from_text(user_input) is not None
     detected_cat = detect_category(user_input)
     clean_t = re.sub(r"\b(phone number|mobile number|my phone|contact number)\b", "", t)
@@ -292,12 +675,11 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
     is_tablet_query = any(w in t for w in ["tablet", "tab", "ipad"])
     is_accessory_query = any(w in t for w in ["keyboard", "mouse", "headphone", "charger", "accessories", "accessory"])
 
-    # If the user asked for a budget or specific category (e.g. "best gaming phone under 20000"), prioritize catalog matches!
     if recs and (has_budget or is_phone_query or is_tablet_query or is_accessory_query or (detected_cat and detected_cat != "Laptops")):
         return f"Based on your requirements, here are our top catalog recommendations:\n\n{format_recommendations_for_agent(recs)}\n\nWould you like to book a showroom demo to test these in person?"
 
-    # 3. Direct Recommendation Questions
-    if "which one is best" in t or "which is best" in t or "which should i buy" in t or "which do you recommend" in t:
+    # Direct recommendations
+    if "which one is best" in t or "which is best" in t or "which should i buy" in t:
         return DEMO_REPLIES["which_is_best"]
 
     if any(w in t for w in ["compare", "difference between", "versus", "vs"]):
@@ -315,51 +697,30 @@ def _generate_demo_reply(user_input: str, recs: List[Dict], context: str) -> str
         if not is_phone_query and not is_tablet_query:
             return DEMO_REPLIES["gaming_laptop"]
 
-    # 4. Product Categories
     if any(w in t for w in ["tablet", "tab", "ipad", "zenith pad", "stylus"]):
         return DEMO_REPLIES["tablets"]
 
-    if any(w in t for w in ["keyboard", "mouse", "headphone", "charger", "accessories", "accessory", "earbuds"]):
-        return DEMO_REPLIES["accessories"]
-
-    if any(w in t for w in ["battery phone", "battery life", "powermax", "6000mah"]):
-        return DEMO_REPLIES["battery_phone"]
-
-    if any(w in t for w in ["camera", "photo", "vlog", "reel", "campro", "photography"]):
-        return DEMO_REPLIES["camera_phone"]
-
-    if any(w in t for w in ["flagship", "expensive phone", "titan fold", "foldable", "best phone", "premium phone"]):
-        return DEMO_REPLIES["flagship_phone"]
-
-    # 5. Policies & Showroom / Appointment Requests
-    if any(w in t for w in ["appointment", "have an appointment", "book an appointment", "schedule an appointment", "book slot", "book a slot", "book demo", "visit store", "store demo", "test this product", "test this", "hands on", "hands-on", "experience centre"]):
-        return DEMO_REPLIES["store_visit"]
-
-    if any(w in t for w in ["store", "showroom", "location", "address", "timings", "open", "timing", "hours"]):
-        if any(w in t for w in ["visit", "book", "come", "tomorrow"]):
-            return DEMO_REPLIES["store_visit"]
+    if any(w in t for w in ["hours", "timings", "timing", "open", "close", "store timing"]):
         return DEMO_REPLIES["store_hours"]
 
-    if any(w in t for w in ["warranty", "return", "replace", "guarantee", "repair", "service center"]):
+    if any(w in t for w in ["warranty", "guarantee"]):
         return DEMO_REPLIES["warranty_policy"]
 
-    if any(w in t for w in ["delivery", "shipping", "courier", "open box", "open-box", "timeline"]):
+    if any(w in t for w in ["deliver", "delivery", "shipping"]):
         return DEMO_REPLIES["delivery_policy"]
 
-    if any(w in t for w in ["payment", "emi", "no cost emi", "no-cost", "card", "upi", "cod", "cash on delivery"]):
+    if any(w in t for w in ["emi", "payment", "credit card", "finance"]):
         return DEMO_REPLIES["payment_emi"]
 
-    if any(w in t for w in ["gst", "invoice", "tax", "b2b", "gstin"]):
+    if any(w in t for w in ["gst", "invoice", "tax", "input credit"]):
         return DEMO_REPLIES["gst_invoice"]
 
-    if any(w in t for w in ["offer", "discount", "exchange", "cashback", "student tech pass"]):
+    if any(w in t for w in ["offer", "discount", "deal", "cashback"]):
         return DEMO_REPLIES["offers"]
 
-    # 6. Recommendation Engine matches
     if recs:
         return f"Based on your requirements, here are our top catalog recommendations:\n\n{format_recommendations_for_agent(recs)}\n\nWould you like to book a showroom demo to test these in person?"
 
-    # 7. RAG Context Extraction (Smart clean summary)
     if context and len(context) > 40:
         first_chunk = context.split("---")[0] if "---" in context else context
         cleaned = _clean_rag_chunk_for_speech(first_chunk)
@@ -373,33 +734,43 @@ def execute_sales_turn(
     call_id: str,
     user_input: str,
     language: str = "en",
-    history: Optional[List[Dict]] = None
+    history: Optional[List[Dict]] = None,
+    booking_state: Optional[Dict] = None
 ) -> Dict:
     """
-    Execute one full conversational sales turn.
-    Returns:
-      {reply, mode, language, sentiment, lead, sources, recommendations, booking, ics_content, latency_ms}
+    Execute one full conversational sales turn with conversation memory,
+    accurate product RAG, and multi-step voice appointment booking.
     """
     db = SessionLocal()
     history = history or []
+    booking_state = booking_state if booking_state is not None else {}
 
     try:
         start_t = time.time()
         lower_input = user_input.lower()
 
-        # Language Detection (English, Telugu, Kannada)
+        # Language Detection (English, Telugu, Kannada, Hindi)
         if any("\u0C00" <= ch <= "\u0C7F" for ch in user_input) or any(w in lower_input for w in ["namaskaram", "namaskaramu", "telugu", "bagundi", "kavali", "chudali"]):
             language = "te"
         elif any("\u0C80" <= ch <= "\u0CFF" for ch in user_input) or any(w in lower_input for w in ["namaskara", "kannada", "chennagide", "beku", "nodabeku"]):
             language = "kn"
+        elif any("\u0900" <= ch <= "\u097F" for ch in user_input) or any(w in lower_input for w in ["namaste", "hindi", "kripya", "chahiye", "kitne", "daam"]):
+            language = "hi"
         else:
             language = language or "en"
 
-        # 1. RAG Context Retrieval
+        # 1. Check Multi-Step Voice Appointment Booking State Machine
+        booking_result = None
+        ics_data = None
+        appt_reply, b_res, ics_c = _handle_voice_appointment_flow(user_input, history, booking_state, language)
+        if b_res:
+            booking_result = b_res
+        if ics_c:
+            ics_data = ics_c
+
+        # 2. RAG Context Retrieval & Product Recommendations
         rag_sources = rag_engine.retrieve(user_input, top_k=3)
         rag_context = rag_engine.get_context(user_input, top_k=3)
-
-        # 2. Product Recommendations
         recs = recommend_products(user_input, max_results=3)
 
         # 3. Sentiment Analysis
@@ -409,14 +780,25 @@ def execute_sales_turn(
         all_text = " ".join([h.get("content", "") for h in history]) + " " + user_input
         extracted_lead: ExtractedLead = extract_lead_from_conversation(all_text)
 
-        # 5. Generate Response (OpenAI or Demo Mode)
-        client = get_ai_client()
+        # 5. Determine Agent Reply
         agent_reply = ""
         mode = "Demo Mode"
 
-        if client:
-            try:
-                system_content = f"""
+        if appt_reply:
+            # Multi-step appointment booking takes precedence
+            agent_reply = appt_reply
+            mode = "Appointment Assistant"
+        else:
+            # Check direct product question answering first
+            direct_ans = answer_direct_product_question(user_input, history)
+            if direct_ans:
+                agent_reply = direct_ans
+                mode = "RAG Catalog Knowledge"
+            else:
+                client = get_ai_client()
+                if client:
+                    try:
+                        system_content = f"""
 {ELECTROMART_SYSTEM_PROMPT}
 
 KNOWLEDGE BASE CONTEXT:
@@ -425,64 +807,37 @@ KNOWLEDGE BASE CONTEXT:
 CATALOG RECOMMENDATIONS:
 {format_recommendations_for_agent(recs)}
 """.strip()
-                messages = [{"role": "system", "content": system_content}]
-                for h in history[-MAX_HISTORY_TURNS:]:
-                    role = "assistant" if h.get("role") in ["assistant", "agent"] else "user"
-                    messages.append({"role": role, "content": h.get("content", "")})
+                        messages = [{"role": "system", "content": system_content}]
+                        for h in history[-MAX_HISTORY_TURNS:]:
+                            role = "assistant" if h.get("role") in ["assistant", "agent"] else "user"
+                            messages.append({"role": role, "content": h.get("content", "")})
 
-                messages.append({"role": "user", "content": user_input})
+                        messages.append({"role": "user", "content": user_input})
 
-                completion = client.chat.completions.create(
-                    model=OPENAI_MODEL_CHAT,
-                    messages=messages,
-                    temperature=0.3
-                )
-                agent_reply = completion.choices[0].message.content.strip()
-                mode = f"OpenAI ({OPENAI_MODEL_CHAT})"
-            except Exception as e:
-                print(f"OpenAI API error, using demo fallback: {e}")
-                agent_reply = _generate_demo_reply(user_input, recs, rag_context)
-                mode = f"Demo Mode (API error: {str(e)[:40]})"
-        else:
-            agent_reply = _generate_demo_reply(user_input, recs, rag_context)
-            mode = "Demo Mode"
+                        completion = client.chat.completions.create(
+                            model=OPENAI_MODEL_CHAT,
+                            messages=messages,
+                            temperature=0.3
+                        )
+                        agent_reply = completion.choices[0].message.content.strip()
+                        mode = f"OpenAI ({OPENAI_MODEL_CHAT})"
+                    except Exception as e:
+                        print(f"OpenAI API error, using demo fallback: {e}")
+                        agent_reply = _generate_demo_reply(user_input, recs, rag_context)
+                        mode = f"Demo Mode (API error: {str(e)[:40]})"
+                else:
+                    agent_reply = _generate_demo_reply(user_input, recs, rag_context)
+                    mode = "Demo Mode"
 
-        # 6. Appointment Booking Detection — Requires explicit booking intent, previous booking prompt, or contact submission + explicit time/date
-        booking_result = None
-        ics_data = None
-        lower_input = user_input.lower()
-        
-        has_booking_intent = bool(re.search(r"\b(book|booking|schedule|reserve|slot|confirm visit|showroom visit|store visit|take an appointment)\b", lower_input))
-        has_explicit_time = bool(re.search(r"(?:\d{1,2}(?::\d{2})?\s*(?:am|pm|p\.m\.|a\.m\.)|\bat\s+\d{1,2}\b|\btomorrow\b|\btoday\b|\bmorning\b|\bevening\b|\bafternoon\b)", lower_input))
-
-        # Check if previous agent turn was an appointment booking prompt
-        prev_agent_prompt = False
-        if history:
-            for h in reversed(history):
-                if h.get("role") in ["assistant", "agent"]:
-                    prev_text = h.get("content", "").lower()
-                    prev_agent_prompt = any(w in prev_text for w in ["what date and time", "convenient for your visit", "schedule a hands-on", "book a showroom demo"])
-                    break
-
-        has_contact_submission = bool(extracted_lead.email or extracted_lead.phone or extracted_lead.name) and has_explicit_time
-
-        if (has_booking_intent or prev_agent_prompt or has_contact_submission) and has_explicit_time:
+        # 6. Legacy/Direct booking fallback for single-turn testing compatibility (if test provides explicit full contact + slot in one shot)
+        if not booking_result and bool(re.search(r"\b(book|booking|schedule|reserve|showroom visit)\b", lower_input)) and bool(re.search(r"(?:\d{1,2}(?::\d{2})?\s*(?:am|pm|p\.m\.|a\.m\.)|\bat\s+\d{1,2}\b)", lower_input)) and (extracted_lead.email or extracted_lead.phone):
             target_date, target_time_str = parse_natural_datetime(user_input)
-            cust_email = extracted_lead.email or "customer@example.com"
             cust_name = extracted_lead.name or "Valued Customer"
+            cust_email = extracted_lead.email or "customer@example.com"
+            prod_name = recs[0]["product_name"] if recs else "Electronics Consultation"
+            city = extracted_lead.city or "Mumbai"
 
-            # Derive product discussed from recommendations or conversation history
-            prod_name = "Electronics Consultation"
-            if recs:
-                prod_name = recs[0]["product_name"]
-            elif history:
-                for h in reversed(history):
-                    m_p = re.search(r"\*\*([A-Za-z0-9\s]{3,30})\*\*", h.get("content", ""))
-                    if m_p:
-                        prod_name = m_p.group(1).strip()
-                        break
-
-            success, b_msg, appt = book_appointment_in_db(
+            ok, b_msg, appt = book_appointment_in_db(
                 db=db,
                 customer_name=cust_name,
                 customer_email=cust_email,
@@ -491,27 +846,23 @@ CATALOG RECOMMENDATIONS:
                 time_str=target_time_str,
                 appointment_type="Store Visit",
                 interested_product=prod_name,
-                city=extracted_lead.city or "Mumbai",
+                city=city,
                 notes="Booked via AI Voice Agent"
             )
-            if success:
+            if ok:
                 booking_result = {
                     "status": "success",
-                    "message": b_msg,
+                    "appointment_id": appt.appointment_id,
                     "date": target_date.strftime("%Y-%m-%d"),
-                    "time": target_time_str
+                    "time": target_time_str,
+                    "message": b_msg
                 }
-                ics_data = generate_ics_content(
-                    cust_name, target_date, target_time_str,
-                    product=prod_name
-                )
+                ics_data = generate_ics_content(cust_name, target_date, target_time_str, prod_name)
                 agent_reply = (
                     f"Thank you, {cust_name}! Your showroom appointment has been successfully confirmed for "
-                    f"**{target_date.strftime('%d %B %Y')} at {target_time_str}** at our {extracted_lead.city or 'Mumbai'} experience centre for **{prod_name}**. "
-                    f"Your Booking ID is **{appt.appointment_id}**. Your .ICS calendar invite is ready below!"
+                    f"**{target_date.strftime('%d %B %Y')} at {target_time_str}** at our {city} showroom for **{prod_name}**. "
+                    f"Your Booking ID is **{appt.appointment_id}**."
                 )
-            else:
-                agent_reply = f"Hello {cust_name}! {b_msg}"
 
         # 7. Persist to Database
         lead = db.query(Lead).filter(Lead.call_id == call_id).first()
@@ -571,6 +922,7 @@ CATALOG RECOMMENDATIONS:
             "recommendations": recs,
             "booking": booking_result,
             "ics_content": ics_data,
+            "booking_state": booking_state,
             "latency_ms": latency_ms
         }
     finally:

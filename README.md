@@ -46,13 +46,13 @@ An autonomous, multilingual B2B/B2C Electronics Retail Sales Voice Agent built f
 
 | Feature | Category | Implementation Details |
 | :--- | :--- | :--- |
-| **Multilingual Voice & Text Chat** | **Working** | Streamlit chat UI + Edge-TTS neural speech in Indian English (`en-IN-NeerjaNeural`), Telugu (`te-IN-ShrutiNeural`), and Kannada (`kn-IN-SapnaNeural`). |
+| **Multilingual Voice & Text Chat** | **Working** | Streamlit SaaS UI + Edge-TTS neural speech in English (`en-IN-NeerjaNeural`), Telugu (`te-IN-ShrutiNeural`), Kannada (`kn-IN-SapnaNeural`), and Hindi (`hi-IN-SwaraNeural`). |
 | **STT Voice Transcription** | **Working** (OpenAI Whisper) / **Demo Mode** | Uses `whisper-1` via `openai` SDK or free local speech recognition; graceful offline text input fallback in Demo Mode. |
 | **Catalog Recommendation Engine**| **Working** | Budget & spec filtering over `data/products.csv`. Does not hallucinate non-existent products. |
 | **Company RAG Retrieval** | **Working** | Cosine similarity over 8 `knowledge_base/*.txt` documents using TF-IDF and NumPy. |
 | **BANT Lead Qualification** | **Working** | Objective 0–100 scoring (Requirement: 20, Budget: 20, Timeline: 25, Contact: 15, Intent: 20) with HOT/WARM/COLD status. |
 | **Live Sentiment & Trajectory** | **Working** | Turn-by-turn sentiment scoring (-1.0 to +1.0) with regex word boundaries and live UI line chart. |
-| **Showroom Appointment Booking** | **Working** | Operating hours check (10 AM to 8:30 PM), duplicate booking lock, and RFC 5545 `.ics` invite generation. |
+| **Showroom Appointment Booking** | **Working** | Dual-engine: Dedicated manual appointment booking portal (CRUD) + 5-step conversational voice booking with operating hours check (10 AM to 8:30 PM), duplicate slot locks, and RFC 5545 `.ics` invite generation. |
 | **SQLite CRM & Webhook Sync** | **Working** | Relational schema storing Customers, Leads, Calls, Messages, Appointments, and Call Summaries. |
 | **Zero-Key Demo Mode** | **Demo Mode** | Complete sales interaction runs offline out-of-the-box with pre-seeded datasets and zero external API keys. |
 | **Telephony Integration** | **Future enhancement** | SIP trunking and WebRTC gateway architecture detailed in `reports/project_report.md`. |
@@ -116,7 +116,7 @@ Run the automated test suite verifying dataset consistency, recommendations, lea
 ```powershell
 python -m pytest tests/ -v
 ```
-*Result: 13 passed in 2.65s.*
+*Result: 17 passed in 4.89s.*
 
 ---
 

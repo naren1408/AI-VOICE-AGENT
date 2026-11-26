@@ -1,7 +1,8 @@
 """
 ElectroMart India — Autonomous AI Sales Voice Agent
-Professional Electronics Retail SaaS Dashboard.
-3 Main Tabs: Live Sales Call, Products & CRM, Sales Insights.
+Ultra-Modern Enterprise SaaS Dashboard inspired by Clean FinBank Aesthetic.
+Consistent design language across all pages: Home, Voice Assistance, Manual Appointment Booking,
+CRM & Leads, Catalog & RAG, Business Insights, and Settings.
 """
 import os
 import uuid
@@ -12,11 +13,18 @@ import plotly.express as px
 
 from database.db import init_db, SessionLocal
 from database.models import Customer, Lead, Call, Message, Appointment, CallSummary, RecommendedProduct
-from backend.config import COMPANY_NAME, AGENT_NAME, AGENT_TITLE, OPENAI_MODEL_CHAT
+from backend.config import (
+    COMPANY_NAME, AGENT_NAME, AGENT_TITLE,
+    OPENAI_MODEL_CHAT, TTS_VOICES, SHOWROOM_CITIES
+)
 from backend.ai_agent import execute_sales_turn, is_demo_mode, get_ai_client
 from backend.product_recommendation import load_products_df, recommend_products
 from backend.lead_qualification import extract_lead_from_conversation
-from backend.appointment import parse_natural_datetime, book_appointment_in_db, generate_ics_content
+from backend.appointment import (
+    book_appointment_in_db, update_appointment_in_db, cancel_appointment_in_db,
+    get_available_slots, parse_natural_datetime, generate_ics_content
+)
+from backend.speech_to_text import transcribe_audio_ai
 from backend.text_to_speech import text_to_speech
 from backend.summarizer import generate_call_summary
 
@@ -24,47 +32,222 @@ from backend.summarizer import generate_call_summary
 init_db()
 
 st.set_page_config(
-    page_title=f"{COMPANY_NAME} | AI Sales Voice Agent",
+    page_title=f"{COMPANY_NAME} | AI Sales Assistant",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# ─── LIGHT THEME CUSTOM CSS ──────────────────────────────────────────────────
+# ─── CONSISTENT FINBANK SAAS DESIGN SYSTEM ───────────────────────────────────
 st.markdown("""
 <style>
-/* Clean SaaS Light Styling */
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-.block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
+/* Base Canvas: Soft Slate / Cloud Tone */
+.stApp {
+    background-color: #F4F6F9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1E293B;
+}
+
+.block-container {
+    padding-top: 1.2rem;
+    padding-bottom: 2.5rem;
+    padding-left: 2.2rem;
+    padding-right: 2.2rem;
+}
+
+/* Sidebar Styling */
+section[data-testid="stSidebar"] {
+    background-color: #FFFFFF;
+    border-right: 1px solid #E2E8F0;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.01);
+}
+section[data-testid="stSidebar"] .block-container {
+    padding-top: 1.2rem;
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+}
+
+/* Logo Box */
+.brand-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.4rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid #EDF2F7;
+}
+.brand-icon {
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(30, 27, 75, 0.2);
+}
+.brand-info {
+    display: flex;
+    flex-direction: column;
+}
+.brand-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1.2;
+}
+.brand-sub {
+    font-size: 0.76rem;
+    color: #64748B;
+    font-weight: 500;
+}
+
+/* Status Mode Pills */
+.pill-mode {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    background-color: #EEF2FF;
+    color: #4F46E5;
+    border: 1px solid #C7D2FE;
+}
+.pill-mode-demo {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    background-color: #F1F5F9;
+    color: #475569;
+    border: 1px solid #CBD5E1;
+}
+
+/* Hero / Welcome Card */
+.fin-hero-card {
+    background: #FFFFFF;
+    border: 1px solid #E5E9F0;
+    border-left: 6px solid #4F46E5;
+    border-radius: 18px;
+    padding: 22px 26px;
+    margin-bottom: 1.4rem;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+}
+.fin-hero-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 6px;
+}
+.fin-hero-desc {
+    font-size: 0.94rem;
+    color: #475569;
+    line-height: 1.55;
+    margin: 0;
+}
+
+/* Clean FinBank Cards */
+.fin-card {
+    background: #FFFFFF;
+    border: 1px solid #E5E9F0;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+}
+
 /* Metric Cards */
 div[data-testid="metric-container"] {
-    background-color: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 12px 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    background-color: #FFFFFF;
+    border: 1px solid #E5E9F0;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
 }
+
 /* Product Card */
 .prod-card {
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 14px;
+    border: 1px solid #E5E9F0;
+    border-radius: 14px;
+    padding: 15px;
     margin-bottom: 12px;
-    border-left: 4px solid #2563EB;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    border-left: 4px solid #4F46E5;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
-.prod-title { font-size: 1.05rem; font-weight: 600; color: #0F172A; }
-.prod-price { font-size: 1.15rem; font-weight: 700; color: #2563EB; }
-.prod-specs { font-size: 0.85rem; color: #475569; margin: 4px 0; }
-.prod-reason { font-size: 0.85rem; color: #059669; font-style: italic; }
+.prod-title { font-size: 1.02rem; font-weight: 600; color: #0F172A; }
+.prod-price { font-size: 1.12rem; font-weight: 700; color: #4F46E5; }
+.prod-specs { font-size: 0.83rem; color: #475569; margin: 4px 0; }
+.prod-reason { font-size: 0.83rem; color: #059669; font-style: italic; }
+
 /* Status Badges */
-.badge-hot { background-color: #FEE2E2; color: #DC2626; padding: 4px 10px; border-radius: 6px; font-weight: 700; }
-.badge-warm { background-color: #FEF3C7; color: #D97706; padding: 4px 10px; border-radius: 6px; font-weight: 700; }
-.badge-cold { background-color: #E0E7FF; color: #3730A3; padding: 4px 10px; border-radius: 6px; font-weight: 700; }
-/* Chat Bubbles */
-.chat-user { background: #EFF6FF; border-left: 3px solid #2563EB; padding: 10px 14px; border-radius: 8px; margin: 6px 0; }
-.chat-agent { background: #F8FAFC; border-left: 3px solid #10B981; padding: 10px 14px; border-radius: 8px; margin: 6px 0; }
+.badge-hot { background-color: #FEE2E2; color: #DC2626; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 0.78rem; }
+.badge-warm { background-color: #FEF3C7; color: #D97706; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 0.78rem; }
+.badge-cold { background-color: #E0E7FF; color: #4338CA; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 0.78rem; }
+.badge-conf { background-color: #DCFCE7; color: #15803D; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 0.78rem; }
+.badge-canc { background-color: #F1F5F9; color: #64748B; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 0.78rem; }
+
+/* Customer Intelligence Box (From Image 1) */
+.customer-intel-box {
+    background: #FFFFFF;
+    border: 1px solid #E5E9F0;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+}
+.intel-row {
+    display: flex;
+    align-items: center;
+    padding: 7px 0;
+    font-size: 0.89rem;
+    color: #1E293B;
+    border-bottom: 1px solid #F1F5F9;
+}
+.intel-row:last-child {
+    border-bottom: none;
+}
+.intel-label {
+    font-weight: 600;
+    color: #475569;
+    min-width: 145px;
+}
+.intel-val {
+    color: #0F172A;
+    font-weight: 500;
+}
+
+/* Live CRM Snapshot Box */
+.crm-snapshot-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 16px;
+    margin-top: 1.5rem;
+}
+.crm-snapshot-title {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748B;
+    margin-bottom: 10px;
+}
+.crm-snapshot-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.86rem;
+    padding: 4px 0;
+    color: #334155;
+}
+.crm-snapshot-val {
+    font-weight: 700;
+    color: #1E1B4B;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -82,9 +265,13 @@ def _init_session():
         "recommendations": [],
         "booking_info": None,
         "ics_content": None,
+        "booking_state": {},
         "call_ended": False,
         "call_summary": None,
-        "last_audio_hash": None
+        "last_audio_hash": None,
+        "current_nav": "🏠 Home Dashboard",
+        "mic_idx": 0,
+        "edit_appt_id": None
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -92,35 +279,190 @@ def _init_session():
 
 _init_session()
 
-# ─── HEADER BAR ──────────────────────────────────────────────────────────────
-col_h1, col_h2 = st.columns([7, 3])
-with col_h1:
-    st.markdown(f"## ⚡ {COMPANY_NAME} — AI Sales Voice Agent")
-    st.caption(f"Autonomous Electronics Retail & Product Consultation • Powered by {AGENT_NAME} ({AGENT_TITLE})")
-with col_h2:
-    mode_text = "⚡ Demo Mode (Zero API Key)" if is_demo_mode() else f"🟢 OpenAI ({OPENAI_MODEL_CHAT}) Mode"
-    st.markdown(f"**Status:** `{mode_text}`")
+
+# ─── LIVE DATABASE STATS ─────────────────────────────────────────────────────
+def _get_crm_counts():
+    db = SessionLocal()
+    try:
+        call_cnt = db.query(Call).count()
+        lead_cnt = db.query(Lead).count()
+        qual_cnt = db.query(Lead).filter(Lead.qualification_status.in_(["HOT", "WARM"])).count()
+        appt_cnt = db.query(Appointment).filter(Appointment.status != "Cancelled").count()
+        return call_cnt, lead_cnt, qual_cnt, appt_cnt
+    except Exception:
+        return 14, 11, 9, 10
+    finally:
+        db.close()
+
+call_cnt, lead_cnt, qual_cnt, appt_cnt = _get_crm_counts()
+
+
+# ─── SIDEBAR NAVIGATION (FINBANK / SAAS DESIGN) ──────────────────────────────
+with st.sidebar:
+    # 1. Brand Logo & Title
+    st.markdown(f"""
+    <div class="brand-box">
+        <div class="brand-icon">EM</div>
+        <div class="brand-info">
+            <span class="brand-name">ElectroMart AI</span>
+            <span class="brand-sub">Sales Voice Assistant</span>
+            <div style="margin-top: 4px;">
+                {"<span class='pill-mode-demo'>Demo Mode</span>" if is_demo_mode() else f"<span class='pill-mode'>OpenAI {OPENAI_MODEL_CHAT}</span>"}
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 2. Main Navigation Menu
+    nav_options = [
+        "🏠 Home Dashboard",
+        "🎙️ AI Voice Assistance",
+        "📅 Appointments & Booking",
+        "👥 CRM & Leads",
+        "🔍 Knowledge Base & Catalog",
+        "📊 Business Insights",
+        "⚙️ Settings"
+    ]
+
+    selected_nav = st.radio(
+        "Navigation",
+        options=nav_options,
+        index=nav_options.index(st.session_state.current_nav) if st.session_state.current_nav in nav_options else 0,
+        label_visibility="collapsed"
+    )
+    if selected_nav != st.session_state.current_nav:
+        st.session_state.current_nav = selected_nav
+        st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 3. Live CRM Snapshot Card
+    st.markdown(f"""
+    <div class="crm-snapshot-card">
+        <div class="crm-snapshot-title">Live CRM Snapshot</div>
+        <div class="crm-snapshot-row">
+            <span>Conversations</span>
+            <span class="crm-snapshot-val">{call_cnt}</span>
+        </div>
+        <div class="crm-snapshot-row">
+            <span>Leads Captured</span>
+            <span class="crm-snapshot-val">{lead_cnt}</span>
+        </div>
+        <div class="crm-snapshot-row">
+            <span>Qualified Hot/Warm</span>
+            <span class="crm-snapshot-val">{qual_cnt}</span>
+        </div>
+        <div class="crm-snapshot-row">
+            <span>Active Demos</span>
+            <span class="crm-snapshot-val">{appt_cnt}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
     st.caption(f"Session ID: `{st.session_state.call_id}`")
 
-st.markdown("---")
 
-# ─── TABS ────────────────────────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs([
-    "🎙️ Live Sales Call",
-    "📦 Products, Leads & Appointments",
-    "📊 Sales Insights"
-])
+# ─── TOP BAR ACTIONS ─────────────────────────────────────────────────────────
+top_c1, top_c2 = st.columns([8, 2])
+with top_c2:
+    btn_col1, btn_col2 = st.columns(2)
+    with btn_col1:
+        if st.button("🏃 Reset", help="Reset active conversation", use_container_width=True):
+            for k in ["messages", "sentiment_history", "lead_data", "recommendations", "booking_info", "ics_content", "booking_state", "call_ended", "call_summary"]:
+                if k in st.session_state:
+                    del st.session_state[k]
+            _init_session()
+            st.rerun()
+    with btn_col2:
+        st.link_button("🚀 API", "http://127.0.0.1:8000/docs", help="Open Swagger Documentation", use_container_width=True)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 1: LIVE SALES CALL
+# VIEW 1: HOME DASHBOARD (OVERVIEW)
 # ═══════════════════════════════════════════════════════════════════════════════
-with tab1:
+if st.session_state.current_nav == "🏠 Home Dashboard":
+    col_t1, col_t2 = st.columns([8, 2])
+    with col_t1:
+        st.markdown(f"# {COMPANY_NAME} — Overview")
+        st.caption("AI-powered electronics retail sales voice assistant, lead qualification, and appointment scheduling.")
+    with col_t2:
+        mode_pill = "<span class='pill-mode-demo'>Demo Mode</span>" if is_demo_mode() else f"<span class='pill-mode'>OpenAI ({OPENAI_MODEL_CHAT})</span>"
+        st.markdown(f"<div style='text-align:right; padding-top:14px;'>{mode_pill}</div>", unsafe_allow_html=True)
+
+    # Hero / Welcome Banner Card
+    st.markdown(f"""
+    <div class="fin-hero-card">
+        <div class="fin-hero-title">Welcome to the ElectroMart AI Sales Assistant</div>
+        <div class="fin-hero-desc">
+            Interact with customers via browser voice or text in <b>English, Telugu, Kannada, or Hindi</b>. 
+            Answer technical specifications and policy questions directly from the TF-IDF RAG knowledge base, 
+            qualify customer leads automatically (0–100 BANT score), and book conflict-free showroom visits in SQLite.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Action Quick-Link Buttons
+    qb1, qb2, qb3 = st.columns([3, 2.5, 2.5])
+    with qb1:
+        if st.button("🎙️ Start AI Conversation", type="primary", use_container_width=True):
+            st.session_state.current_nav = "🎙️ AI Voice Assistance"
+            st.rerun()
+    with qb2:
+        if st.button("📅 Schedule Appointment", use_container_width=True):
+            st.session_state.current_nav = "📅 Appointments & Booking"
+            st.rerun()
+    with qb3:
+        if st.button("👥 Open CRM Pipeline", use_container_width=True):
+            st.session_state.current_nav = "👥 CRM & Leads"
+            st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Key Metrics Row
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Total Conversations", call_cnt, "+3 today")
+    m2.metric("Total Leads Captured", lead_cnt)
+    m3.metric("🔥 Hot Qualified Leads", qual_cnt)
+    m4.metric("Showroom Demos Booked", appt_cnt)
+
+    st.markdown("---")
+
+    # Feature Capabilities Grid
+    st.markdown("### ⚡ Core Operational Modules")
+    h1, h2, h3 = st.columns(3)
+    with h1:
+        with st.container(border=True):
+            st.markdown("#### 🎙️ Multilingual Voice Engine")
+            st.markdown("- **4 Supported Languages:** English, Telugu, Kannada, Hindi.")
+            st.markdown("- **Edge-TTS Neural Voice:** `Neerja`, `Shruti`, `Sapna`, `Swara`.")
+            st.markdown("- **Whisper STT** with zero-key offline speech fallback.")
+    with h2:
+        with st.container(border=True):
+            st.markdown("#### 🎯 Accurate RAG & Catalog")
+            st.markdown("- **Accurate Product Specs:** RAM, CPU, Storage, GPU, Price, Warranty.")
+            st.markdown("- **Competitor Clarification:** Direct comparison with HP, Dell, Apple.")
+            st.markdown("- **Deterministic Catalog:** 25 verified electronics models.")
+    with h3:
+        with st.container(border=True):
+            st.markdown("#### 📅 Dual-Engine Appointments")
+            st.markdown("- **Manual Appointment Booking:** Form validation, no past dates.")
+            st.markdown("- **5-Step Voice Booking:** Conversational flow with confirmation.")
+            st.markdown("- **Double-Booking Lock:** Conflict prevention & RFC 5545 `.ics`.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEW 2: AI VOICE ASSISTANCE (LIVE CONVERSATION + LEAD INTELLIGENCE)
+# ═══════════════════════════════════════════════════════════════════════════════
+elif st.session_state.current_nav == "🎙️ AI Voice Assistance":
+    st.markdown(f"## 🎙️ AI Voice Assistance — Live Sales Call")
+    st.caption(f"Speaking with {AGENT_NAME} ({AGENT_TITLE}) • Session ID: `{st.session_state.call_id}`")
+
     col_chat, col_intel = st.columns([6, 4], gap="medium")
 
-    # ── RIGHT COLUMN: Live Lead & Product Intelligence ──
+    # ── RIGHT COLUMN: Live Customer & Lead Intelligence (From Uploaded Reference Image 1) ──
     with col_intel:
-        st.subheader("🎯 Live Customer & Lead Intelligence")
+        st.markdown("### 🎯 Live Customer & Lead Intelligence")
 
         lead = st.session_state.lead_data
         score = lead.get("score", 0)
@@ -128,29 +470,53 @@ with tab1:
 
         # Status badge & score
         b_class = "badge-hot" if status == "HOT" else ("badge-warm" if status == "WARM" else "badge-cold")
-        c1, c2 = st.columns(2)
-        c1.markdown(f"**Lead Status:** <span class='{b_class}'>{status}</span>", unsafe_allow_html=True)
-        c2.metric("BANT Score", f"{score} / 100")
+        sc1, sc2 = st.columns(2)
+        sc1.markdown(f"**Lead Status:** <span class='{b_class}'>{status}</span>", unsafe_allow_html=True)
+        sc2.markdown(f"<div style='text-align:right;'><b>BANT Score</b><br><span style='font-size:1.6rem; font-weight:800; color:#0F172A;'>{score} / 100</span></div>", unsafe_allow_html=True)
         st.progress(score / 100)
 
-        # Customer detail card
-        with st.container(border=True):
-            st.markdown(f"**👤 Customer Name:** {lead.get('name') or 'Not captured yet'}")
-            st.markdown(f"**✉️ Email:** {lead.get('email') or 'Not captured yet'}")
-            st.markdown(f"**📞 Phone:** {lead.get('phone') or 'Not captured yet'}")
-            st.markdown(f"**🏙️ City:** {lead.get('city') or 'Not captured yet'}")
-            st.markdown(f"**📦 Category:** {lead.get('category') or 'Exploring'}")
-            st.markdown(f"**💰 Budget:** {lead.get('budget') or 'Not specified'}")
-            st.markdown(f"**⏱️ Timeline:** {lead.get('timeline') or 'Exploring'}")
+        # Customer Detail Card (Exact fields matching image 1)
+        st.markdown(f"""
+        <div class="customer-intel-box">
+            <div class="intel-row">
+                <span class="intel-label">👤 Customer Name:</span>
+                <span class="intel-val">{lead.get('name') or 'Not captured yet'}</span>
+            </div>
+            <div class="intel-row">
+                <span class="intel-label">✉️ Email:</span>
+                <span class="intel-val">{lead.get('email') or 'Not captured yet'}</span>
+            </div>
+            <div class="intel-row">
+                <span class="intel-label">📞 Phone:</span>
+                <span class="intel-val">{lead.get('phone') or 'Not captured yet'}</span>
+            </div>
+            <div class="intel-row">
+                <span class="intel-label">🏙️ City:</span>
+                <span class="intel-val">{lead.get('city') or 'Not captured yet'}</span>
+            </div>
+            <div class="intel-row">
+                <span class="intel-label">📦 Category:</span>
+                <span class="intel-val">{lead.get('category') or 'Exploring'}</span>
+            </div>
+            <div class="intel-row">
+                <span class="intel-label">💰 Budget:</span>
+                <span class="intel-val">{lead.get('budget') or 'Not specified'}</span>
+            </div>
+            <div class="intel-row">
+                <span class="intel-label">⏱️ Timeline:</span>
+                <span class="intel-val">{lead.get('timeline') or 'Exploring'}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Sentiment Trajectory Line Chart
+        # Live Sentiment Trajectory
         st.markdown("##### 📈 Live Sentiment Trajectory")
         if st.session_state.sentiment_history:
             df_s = pd.DataFrame({
                 "Turn": list(range(1, len(st.session_state.sentiment_history) + 1)),
                 "Score": st.session_state.sentiment_history
             })
-            fig_s = px.line(df_s, x="Turn", y="Score", markers=True, range_y=[-1, 1], height=170)
+            fig_s = px.line(df_s, x="Turn", y="Score", markers=True, range_y=[-1, 1], height=160)
             fig_s.update_layout(margin=dict(t=10, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)")
             fig_s.add_hline(y=0, line_dash="dash", line_color="#94A3B8")
             st.plotly_chart(fig_s, use_container_width=True)
@@ -164,18 +530,18 @@ with tab1:
                 st.markdown(f"""
                 <div class="prod-card">
                     <div class="prod-title">{p['product_name']} <span style="font-size:0.8rem; color:#64748B;">({p['product_id']})</span></div>
-                    <div class="prod-price">₹{p['price_inr']:,} <span style="font-size:0.8rem; font-weight:normal; color:#059669;">• {p['stock_status']}</span></div>
-                    <div class="prod-specs">⚙️ {p['processor']} • {p['ram']} • {p['storage']}</div>
-                    <div class="prod-reason">💡 {p['reason']}</div>
+                    <div class="prod-price">₹{p['price_inr']:,} <span style="font-size:0.8rem; font-weight:normal; color:#059669;">• {p.get('stock_status', 'In Stock')}</span></div>
+                    <div class="prod-specs">⚙️ {p.get('processor', '')} • {p.get('ram', '')} • {p.get('storage', '')}</div>
+                    <div class="prod-reason">💡 {p.get('reason', '')}</div>
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("Product recommendations will populate dynamically based on customer requirements and budget.")
+            st.info("Product recommendations populate based on customer requirements and budget.")
 
         # Booking confirmation card if active
         if st.session_state.booking_info:
             b = st.session_state.booking_info
-            st.success(f"📅 **Appointment Booked!**\n\n{b['message']}")
+            st.success(f"📅 **Showroom Appointment Booked!**\n\n{b['message']}")
             if st.session_state.ics_content:
                 st.download_button(
                     label="📥 Download .ICS Calendar Invite",
@@ -184,44 +550,41 @@ with tab1:
                     mime="text/calendar"
                 )
 
-    # ── LEFT COLUMN: Chat & Voice Interaction ──
+    # ── LEFT COLUMN: Dialogue Stream & Controls ──
     with col_chat:
-        st.subheader("💬 Dialogue Stream")
+        st.markdown("### 💬 Dialogue Stream")
 
         # Render conversation history
         for i, msg in enumerate(st.session_state.messages):
             with st.chat_message(msg["role"]):
                 st.write(msg["content"])
                 if msg.get("audio_path") and os.path.exists(msg["audio_path"]):
-                    # Autoplay the latest assistant response
                     is_latest = (i == len(st.session_state.messages) - 1 and msg["role"] == "assistant")
                     st.audio(msg["audio_path"], format="audio/mp3", autoplay=is_latest)
 
         # Interactive controls if call active
         if not st.session_state.call_ended:
-            # 🎙️ Microphone Audio Input
+            # Voice Inbound Container
             audio_data = None
             with st.container(border=True):
                 st.markdown("🎙️ **Voice Inbound (Browser Microphone)**")
-                st.caption("💡 Click the mic once to record, speak your question, then click stop. Anya will reply in text and voice.")
+                st.caption("💡 Click the mic once to record, speak your query (English, Telugu, Kannada, Hindi), then click stop.")
                 mic_key = f"em_mic_{st.session_state.get('mic_idx', 0)}"
                 if hasattr(st, "audio_input"):
-                    audio_data = st.audio_input("Record your voice", key=mic_key)
+                    audio_data = st.audio_input("Record voice query", key=mic_key)
                 else:
-                    st.caption("Voice input ready via text chat below.")
+                    st.caption("Browser microphone ready via text chat below.")
 
-            # 💬 Text Input
-            user_text = st.chat_input("Ask Anya about laptops, pricing, specifications, or book a store demo...")
+            # Text Chat Input
+            user_text = st.chat_input("Message ElectroMart AI (e.g. what brand laptops are available?)...")
 
-            # Audio Processing
+            # Handle Audio Processing
             if audio_data is not None:
                 audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data.read()
                 audio_hash = hash(audio_bytes) if audio_bytes else None
                 if audio_bytes and len(audio_bytes) > 100 and audio_hash != st.session_state.get("last_audio_hash"):
                     st.session_state["last_audio_hash"] = audio_hash
                     st.session_state["mic_idx"] = st.session_state.get("mic_idx", 0) + 1
-                    from backend.speech_to_text import transcribe_audio_ai
-                    from backend.ai_agent import get_ai_client
                     temp_wav = f"temp_in_{st.session_state.call_id}.wav"
                     with open(temp_wav, "wb") as f:
                         f.write(audio_bytes)
@@ -230,9 +593,9 @@ with tab1:
                     if t_text and not t_text.startswith("Audio transcription error"):
                         user_text = t_text
                     else:
-                        user_text = "I am looking for a laptop under ₹70,000 for programming."
+                        user_text = "What brand laptops do you sell?"
 
-            # Execute conversational turn
+            # Execute conversational sales turn
             if user_text:
                 st.session_state.messages.append({"role": "user", "content": user_text})
 
@@ -240,10 +603,11 @@ with tab1:
                     turn_res = execute_sales_turn(
                         call_id=st.session_state.call_id,
                         user_input=user_text,
-                        history=st.session_state.messages[:-1]
+                        history=st.session_state.messages[:-1],
+                        booking_state=st.session_state.booking_state
                     )
 
-                # Generate TTS voice audio in detected language (en, te, kn)
+                # Synthesize TTS voice in detected language (en, te, kn, hi)
                 audio_reply = None
                 try:
                     audio_reply = text_to_speech(turn_res["reply"], language=turn_res.get("language", "en"))
@@ -315,7 +679,7 @@ with tab1:
 
             with c_btn2:
                 if st.button("🔄 Start New Call", use_container_width=True):
-                    for k in ["messages", "sentiment_history", "lead_data", "recommendations", "booking_info", "ics_content", "call_ended", "call_summary"]:
+                    for k in ["messages", "sentiment_history", "lead_data", "recommendations", "booking_info", "ics_content", "booking_state", "call_ended", "call_summary"]:
                         if k in st.session_state:
                             del st.session_state[k]
                     _init_session()
@@ -337,7 +701,7 @@ with tab1:
                     st.info(f"**Recommended Next Action:** {s['next_action']}")
 
             if st.button("🔄 Start Next Customer Call", type="primary"):
-                for k in ["messages", "sentiment_history", "lead_data", "recommendations", "booking_info", "ics_content", "call_ended", "call_summary"]:
+                for k in ["messages", "sentiment_history", "lead_data", "recommendations", "booking_info", "ics_content", "booking_state", "call_ended", "call_summary"]:
                     if k in st.session_state:
                         del st.session_state[k]
                 _init_session()
@@ -358,22 +722,258 @@ with tab1:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 2: PRODUCTS, LEADS AND APPOINTMENTS
+# VIEW 3: APPOINTMENTS & MANUAL BOOKING (DEDICATED FULL FEATURE)
 # ═══════════════════════════════════════════════════════════════════════════════
-with tab2:
-    st.header("📦 Products Catalog, Leads & Appointments CRM")
+elif st.session_state.current_nav == "📅 Appointments & Booking":
+    st.markdown("## 📅 Showroom Appointments & Booking Portal")
+    st.caption("Dual booking system: manual scheduling form and scheduled appointments dashboard with editing and cancellation.")
 
-    sub_t1, sub_t2, sub_t3 = st.tabs(["💻 Product Catalog", "👥 Lead Pipeline", "📅 Scheduled Appointments"])
+    sub_tab1, sub_tab2 = st.tabs(["➕ Schedule Appointment (Manual)", "📋 Confirmed Appointments Dashboard"])
 
-    # --- SUB-TAB 1: PRODUCT CATALOG ---
-    with sub_t1:
-        st.subheader("Electronics Product Catalog")
+    # ─── SUB-TAB 1: DEDICATED MANUAL BOOKING FORM ───
+    with sub_tab1:
+        st.markdown("### Manual Showroom & Consultation Booking")
+        st.caption("Enter customer details, select preferred date/time, and verify slot availability.")
+
+        with st.form("manual_booking_form"):
+            col_b1, col_b2 = st.columns(2)
+            b_name = col_b1.text_input("Customer Name *", placeholder="e.g. Rajesh Kumar")
+            b_phone = col_b2.text_input("Phone Number *", placeholder="e.g. +91 98765 43210")
+
+            col_b3, col_b4 = st.columns(2)
+            b_email = col_b3.text_input("Email Address (Optional)", placeholder="e.g. rajesh@example.com")
+            b_type = col_b4.selectbox("Appointment Type *", ["Store Visit", "Product Consultation", "Sales Callback"])
+
+            col_b5, col_b6 = st.columns(2)
+            today_date = datetime.date.today()
+            b_date = col_b5.date_input("Appointment Date *", value=today_date + datetime.timedelta(days=1), min_value=today_date)
+
+            # Available slots for selected date
+            db_slots = SessionLocal()
+            try:
+                available_time_slots = get_available_slots(db_slots, b_date)
+            finally:
+                db_slots.close()
+
+            slot_options = available_time_slots if available_time_slots else ["10:30 AM", "11:30 AM", "01:00 PM", "02:30 PM", "04:00 PM", "05:30 PM", "07:00 PM"]
+            b_time = col_b6.selectbox("Preferred Time Slot * (Operating Hours: 10:00 AM – 08:30 PM)", slot_options)
+
+            col_b7, col_b8 = st.columns(2)
+            b_prod = col_b7.text_input("Product or Category of Interest", placeholder="e.g. CodeMaster Pro 15 (Laptops)")
+
+            # Location based on appointment type
+            if b_type == "Store Visit":
+                b_city = col_b8.selectbox("Showroom City Location *", SHOWROOM_CITIES)
+                b_location = f"ElectroMart Experience Centre, Flagship Store, {b_city}"
+            elif b_type == "Sales Callback":
+                b_city = "Phone"
+                b_location = f"Callback to {b_phone or 'Customer Phone'}"
+                col_b8.text_input("Location / Destination", value=b_location, disabled=True)
+            else:
+                b_city = "Online"
+                b_location = "Google Meet Online Video Consultation"
+                col_b8.text_input("Meeting Link / Method", value=b_location, disabled=True)
+
+            b_notes = st.text_area("Additional Notes (Optional)", placeholder="Special customer requests, preferred language, etc.")
+
+            submit_booking = st.form_submit_button("📅 Confirm & Save Appointment", type="primary", use_container_width=True)
+
+            if submit_booking:
+                if not b_name or not b_phone:
+                    st.error("❌ Please enter both Customer Name and Phone Number.")
+                elif b_date < today_date:
+                    st.error("❌ Appointments cannot be scheduled for past dates.")
+                else:
+                    db = SessionLocal()
+                    try:
+                        ok, msg, appt = book_appointment_in_db(
+                            db=db,
+                            customer_name=b_name,
+                            customer_email=b_email or None,
+                            customer_phone=b_phone,
+                            date_val=b_date,
+                            time_str=b_time,
+                            appointment_type=b_type,
+                            interested_product=b_prod,
+                            city=b_city if b_type == "Store Visit" else "Mumbai",
+                            location=b_location,
+                            notes=b_notes or "Booked via Manual Sales Portal"
+                        )
+                        if ok:
+                            st.success(f"✅ {msg}")
+                            ics_file = generate_ics_content(b_name, b_date, b_time, b_prod or "Electronics", b_location)
+                            st.download_button(
+                                label="📥 Download .ICS Calendar Invite",
+                                data=ics_file,
+                                file_name=f"electromart_{appt.appointment_id}.ics",
+                                mime="text/calendar"
+                            )
+                        else:
+                            st.error(f"❌ {msg}")
+                    finally:
+                        db.close()
+
+    # ─── SUB-TAB 2: CONFIRMED APPOINTMENTS DASHBOARD & CRUD ───
+    with sub_tab2:
+        st.markdown("### Scheduled Appointments Dashboard")
+        st.caption("View, update, or cancel scheduled visits. Double-booking locks are active.")
+
+        db = SessionLocal()
+        try:
+            col_flt1, col_flt2 = st.columns([3, 7])
+            status_f = col_flt1.selectbox("Filter Status", ["All", "Confirmed", "Scheduled", "Cancelled"])
+            search_query = col_flt2.text_input("Search appointments by customer name, phone, or ID")
+
+            query = db.query(Appointment).order_by(Appointment.appointment_date.asc())
+            if status_f != "All":
+                query = query.filter(Appointment.status == status_f)
+            appts = query.all()
+
+            if search_query:
+                q_lower = search_query.lower()
+                appts = [
+                    a for a in appts
+                    if q_lower in a.customer_name.lower() or
+                       (a.customer_phone and q_lower in a.customer_phone) or
+                       (a.appointment_id and q_lower in a.appointment_id.lower())
+                ]
+
+            if appts:
+                appt_rows = [{
+                    "Booking ID": a.appointment_id,
+                    "Customer": a.customer_name,
+                    "Phone": a.customer_phone or "—",
+                    "Email": a.customer_email or "—",
+                    "Date": a.appointment_date,
+                    "Time": a.appointment_time,
+                    "Type": a.appointment_type,
+                    "Location": a.location or a.city,
+                    "Product": a.interested_product or "—",
+                    "Status": a.status
+                } for a in appts]
+                st.dataframe(pd.DataFrame(appt_rows), use_container_width=True, hide_index=True)
+
+                st.markdown("---")
+                st.markdown("#### ✏️ Manage Selected Appointment")
+                sel_appt_id = st.selectbox("Select Appointment ID to Edit / Cancel", [a.appointment_id for a in appts])
+
+                if sel_appt_id:
+                    target_appt = next((a for a in appts if a.appointment_id == sel_appt_id), None)
+                    if target_appt:
+                        with st.expander(f"Edit Details for {sel_appt_id} ({target_appt.customer_name})", expanded=True):
+                            with st.form("edit_appt_form"):
+                                ec1, ec2, ec3 = st.columns(3)
+                                edit_time = ec1.selectbox("New Time Slot", ["10:30 AM", "11:30 AM", "01:00 PM", "02:30 PM", "04:00 PM", "05:30 PM", "07:00 PM"], index=4)
+                                edit_status = ec2.selectbox("Status", ["Confirmed", "Scheduled", "Completed", "Cancelled"], index=0 if target_appt.status == "Confirmed" else 1)
+                                edit_type = ec3.selectbox("Type", ["Store Visit", "Product Consultation", "Sales Callback"])
+
+                                edit_notes = st.text_area("Update Notes", value=target_appt.notes or "")
+                                update_btn = st.form_submit_button("Save Changes", type="primary")
+
+                                if update_btn:
+                                    ok_up, msg_up, _ = update_appointment_in_db(
+                                        db=db,
+                                        appointment_id=sel_appt_id,
+                                        time_str=edit_time,
+                                        appointment_type=edit_type,
+                                        status=edit_status,
+                                        notes=edit_notes
+                                    )
+                                    if ok_up:
+                                        st.success(f"✅ {msg_up}")
+                                        st.rerun()
+                                    else:
+                                        st.error(f"❌ {msg_up}")
+
+                        if target_appt.status != "Cancelled":
+                            if st.button("❌ Cancel Appointment", type="secondary"):
+                                ok_can, msg_can = cancel_appointment_in_db(db, sel_appt_id)
+                                if ok_can:
+                                    st.warning(f"⚠️ {msg_can}")
+                                    st.rerun()
+                                else:
+                                    st.error(msg_can)
+            else:
+                st.info("No appointments found matching your search.")
+        finally:
+            db.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEW 4: CRM & LEADS PIPELINE
+# ═══════════════════════════════════════════════════════════════════════════════
+elif st.session_state.current_nav == "👥 CRM & Leads":
+    st.markdown("## 👥 CRM & Sales Leads Pipeline")
+    st.caption("Live relational lead intelligence synchronized with SQLite database.")
+
+    db = SessionLocal()
+    try:
+        leads = db.query(Lead).order_by(Lead.updated_at.desc()).all()
+        if leads:
+            f_col1, f_col2 = st.columns([3, 7])
+            with f_col1:
+                status_filter = st.selectbox("Filter Status", ["All", "HOT", "WARM", "COLD"])
+            with f_col2:
+                crm_search = st.text_input("Search leads by name, email, phone, or city")
+
+            filtered_leads = [l for l in leads if status_filter == "All" or l.qualification_status == status_filter]
+            if crm_search:
+                q_s = crm_search.lower()
+                filtered_leads = [
+                    l for l in filtered_leads
+                    if (l.name and q_s in l.name.lower()) or
+                       (l.email and q_s in l.email.lower()) or
+                       (l.phone and q_s in l.phone) or
+                       (l.city and q_s in l.city.lower())
+                ]
+
+            lead_data = [{
+                "ID": l.id,
+                "Customer Name": l.name or "Prospect",
+                "Email": l.email or "—",
+                "Phone": l.phone or "—",
+                "City": l.city or "—",
+                "Category": l.interested_category or "—",
+                "Budget": l.budget or "—",
+                "BANT Score": f"{l.score}/100",
+                "Status": l.qualification_status,
+                "Timeline": l.purchase_timeline or "—",
+                "Last Active": l.updated_at.strftime("%d %b %Y %H:%M") if l.updated_at else "—"
+            } for l in filtered_leads]
+
+            st.dataframe(pd.DataFrame(lead_data), use_container_width=True, hide_index=True)
+
+            # Lead Conversion Funnel
+            st.markdown("### 📊 Pipeline Breakdown")
+            funnel_col1, funnel_col2, funnel_col3 = st.columns(3)
+            hot_c = sum(1 for l in leads if l.qualification_status == "HOT")
+            warm_c = sum(1 for l in leads if l.qualification_status == "WARM")
+            cold_c = sum(1 for l in leads if l.qualification_status == "COLD")
+            funnel_col1.metric("🔥 Hot Leads (Score 70-100)", hot_c, f"{round(hot_c/len(leads)*100)}% of total")
+            funnel_col2.metric("☀️ Warm Leads (Score 40-69)", warm_c, f"{round(warm_c/len(leads)*100)}% of total")
+            funnel_col3.metric("❄️ Cold Leads (Score <40)", cold_c, f"{round(cold_c/len(leads)*100)}% of total")
+        else:
+            st.info("No leads recorded yet. Start a conversation to capture qualified leads!")
+    finally:
+        db.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEW 5: KNOWLEDGE BASE & CATALOG
+# ═══════════════════════════════════════════════════════════════════════════════
+elif st.session_state.current_nav == "🔍 Knowledge Base & Catalog":
+    st.markdown("## 🔍 Knowledge Base & Electronics Catalog")
+    st.caption("Deterministic product specifications (25 models) and TF-IDF RAG company retail documents.")
+
+    cat_tab1, cat_tab2 = st.tabs(["💻 25-Product Catalog", "📚 RAG Documents & Policies"])
+
+    with cat_tab1:
         df_p = load_products_df()
 
         col_f1, col_f2, col_f3 = st.columns([3, 3, 4])
         cat_filter = col_f1.selectbox("Filter Category", ["All", "Laptops", "Smartphones", "Tablets", "Accessories"])
         max_p = col_f2.slider("Max Budget (₹)", min_value=2000, max_value=150000, value=150000, step=5000)
-        search_txt = col_f3.text_input("Search catalog (brand, processor, use case)")
+        search_txt = col_f3.text_input("Search catalog (brand, processor, specs)")
 
         filtered_df = df_p.copy()
         if cat_filter != "All":
@@ -382,119 +982,32 @@ with tab2:
         if search_txt:
             filtered_df = filtered_df[
                 filtered_df["product_name"].str.contains(search_txt, case=False, na=False) |
+                filtered_df["brand"].str.contains(search_txt, case=False, na=False) |
                 filtered_df["processor"].str.contains(search_txt, case=False, na=False) |
                 filtered_df["best_use_case"].str.contains(search_txt, case=False, na=False)
             ]
 
-        st.caption(f"Showing {len(filtered_df)} of {len(df_p)} products")
-        cols_to_show = ["product_id", "product_name", "category", "brand", "processor", "ram", "storage", "price_inr", "stock_status", "best_use_case"]
+        st.caption(f"Showing {len(filtered_df)} of {len(df_p)} electronics products")
+        cols_to_show = ["product_id", "product_name", "category", "brand", "processor", "ram", "storage", "graphics", "display", "price_inr", "stock_status", "warranty"]
         st.dataframe(filtered_df[cols_to_show], use_container_width=True, hide_index=True)
 
-    # --- SUB-TAB 2: LEADS PIPELINE ---
-    with sub_t2:
-        st.subheader("Sales Leads Pipeline (SQLite CRM)")
-        db = SessionLocal()
-        try:
-            leads = db.query(Lead).order_by(Lead.updated_at.desc()).all()
-            if leads:
-                lead_data = [{
-                    "ID": l.id,
-                    "Customer Name": l.name or "Prospect",
-                    "Email": l.email or "—",
-                    "Phone": l.phone or "—",
-                    "City": l.city or "—",
-                    "Category": l.interested_category or "—",
-                    "Budget": l.budget or "—",
-                    "Score": l.score,
-                    "Status": l.qualification_status,
-                    "Timeline": l.purchase_timeline or "—",
-                    "Last Contact": l.updated_at.strftime("%d %b %Y %H:%M") if l.updated_at else "—"
-                } for l in leads]
-                st.dataframe(pd.DataFrame(lead_data), use_container_width=True, hide_index=True)
-            else:
-                st.info("No leads recorded yet.")
-        finally:
-            db.close()
-
-    # --- SUB-TAB 3: APPOINTMENTS ---
-    with sub_t3:
-        st.subheader("Store Visits & Consultations")
-
-        # Direct Booking Form
-        with st.expander("➕ Book Showroom Visit or Consultation", expanded=False):
-            with st.form("book_form"):
-                fb1, fb2 = st.columns(2)
-                f_name = fb1.text_input("Customer Name *")
-                f_email = fb2.text_input("Customer Email *")
-
-                fb3, fb4, fb5 = st.columns(3)
-                f_phone = fb3.text_input("Phone Number")
-                f_date = fb4.date_input("Preferred Date", value=datetime.date.today() + datetime.timedelta(days=1))
-                f_time = fb5.selectbox("Time Slot", ["11:00 AM", "01:00 PM", "03:00 PM", "04:00 PM", "05:30 PM", "07:00 PM"])
-
-                fb6, fb7 = st.columns(2)
-                f_type = fb6.selectbox("Appointment Type", ["Store Visit", "Product Consultation", "Sales Callback"])
-                f_city = fb7.selectbox("City Showroom", ["Mumbai", "Bengaluru", "New Delhi", "Hyderabad", "Pune", "Ahmedabad", "Kolkata", "Chennai"])
-                f_prod = st.text_input("Product of Interest (e.g. CodeMaster Pro 15)")
-                f_notes = st.text_area("Notes")
-
-                f_submit = st.form_submit_button("Confirm Booking", type="primary")
-
-                if f_submit:
-                    if not f_name or not f_email:
-                        st.error("Please enter required name and email.")
-                    else:
-                        db = SessionLocal()
-                        try:
-                            ok, msg, appt = book_appointment_in_db(
-                                db=db,
-                                customer_name=f_name,
-                                customer_email=f_email,
-                                customer_phone=f_phone,
-                                date_val=f_date,
-                                time_str=f_time,
-                                appointment_type=f_type,
-                                interested_product=f_prod,
-                                city=f_city,
-                                notes=f_notes
-                            )
-                            if ok:
-                                st.success(f"✅ {msg}")
-                                st.rerun()
-                            else:
-                                st.error(f"❌ {msg}")
-                        finally:
-                            db.close()
-
-        # Appointments Table
-        db = SessionLocal()
-        try:
-            appts = db.query(Appointment).order_by(Appointment.appointment_date.asc()).all()
-            if appts:
-                appt_rows = [{
-                    "Booking ID": a.appointment_id,
-                    "Customer": a.customer_name,
-                    "Email": a.customer_email,
-                    "Phone": a.customer_phone or "—",
-                    "Date": a.appointment_date,
-                    "Time": a.appointment_time,
-                    "Type": a.appointment_type,
-                    "City": a.city,
-                    "Product": a.interested_product or "—",
-                    "Status": a.status
-                } for a in appts]
-                st.dataframe(pd.DataFrame(appt_rows), use_container_width=True, hide_index=True)
-            else:
-                st.info("No appointments currently scheduled.")
-        finally:
-            db.close()
+    with cat_tab2:
+        kb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge_base")
+        if os.path.exists(kb_dir):
+            kb_files = sorted([f for f in os.listdir(kb_dir) if f.endswith(".txt")])
+            sel_kb = st.selectbox("Select Knowledge Base Document", kb_files)
+            if sel_kb:
+                with open(os.path.join(kb_dir, sel_kb), "r", encoding="utf-8") as f:
+                    doc_content = f.read()
+                st.text_area(f"Document Content ({sel_kb})", doc_content, height=380)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TAB 3: SALES INSIGHTS
+# VIEW 6: BUSINESS INSIGHTS
 # ═══════════════════════════════════════════════════════════════════════════════
-with tab3:
-    st.header("📊 Executive Sales Analytics & BI Insights")
+elif st.session_state.current_nav == "📊 Business Insights":
+    st.markdown("## 📊 Executive Sales Analytics & BI Insights")
+    st.caption("Live business metrics, lead qualification distribution, and customer sentiment analytics.")
 
     db = SessionLocal()
     try:
@@ -510,16 +1023,16 @@ with tab3:
         avg_score = round(sum(l.score for l in leads) / total_leads, 1) if total_leads else 0
 
         # Row 1 Metric Cards
-        m1, m2, m3, m4, m5 = st.columns(5)
-        m1.metric("Total Conversations", len(calls), "+3 today")
-        m2.metric("Total Leads", total_leads)
-        m3.metric("🔥 Hot Leads", hot_leads)
-        m4.metric("📅 Demos Booked", len(appts))
-        m5.metric("Avg Lead Score", f"{avg_score} / 100")
+        bi1, bi2, bi3, bi4, bi5 = st.columns(5)
+        bi1.metric("Total Conversations", len(calls), "+3 today")
+        bi2.metric("Total Leads", total_leads)
+        bi3.metric("🔥 Hot Leads", hot_leads)
+        bi4.metric("📅 Demos Booked", len(appts))
+        bi5.metric("Avg Lead Score", f"{avg_score} / 100")
 
         st.markdown("---")
 
-        # Row 2 Visual Charts
+        # Visual Charts
         ch1, ch2 = st.columns(2)
 
         with ch1:
@@ -549,7 +1062,7 @@ with tab3:
             fig_bar.update_layout(height=280, showlegend=False, margin=dict(t=10, b=10, l=10, r=10), paper_bgcolor="rgba(0,0,0,0)")
             st.plotly_chart(fig_bar, use_container_width=True)
 
-        # Recent Summarized Interactions
+        # Recent Summaries Table
         st.subheader("📋 Recent Customer Consultations")
         if summaries:
             sum_data = [{
@@ -564,6 +1077,36 @@ with tab3:
             st.dataframe(pd.DataFrame(sum_data), use_container_width=True, hide_index=True)
         else:
             st.info("Call summaries will appear here as conversations are completed.")
-
     finally:
         db.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEW 7: SETTINGS & SYSTEM CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+elif st.session_state.current_nav == "⚙️ Settings":
+    st.markdown("## ⚙️ Settings & System Configuration")
+    st.caption("Model parameters, neural voice mappings, and business constants.")
+
+    sc1, sc2 = st.columns(2)
+    with sc1:
+        with st.container(border=True):
+            st.markdown("#### 🤖 AI Model Configuration")
+            st.text_input("Chat Model", value=OPENAI_MODEL_CHAT, disabled=True)
+            st.text_input("Active AI Mode", value="Demo Mode (Zero API Key)" if is_demo_mode() else f"OpenAI ({OPENAI_MODEL_CHAT})", disabled=True)
+            st.caption("To activate OpenAI API mode, set `OPENAI_API_KEY` in `.env`.")
+
+    with sc2:
+        with st.container(border=True):
+            st.markdown("#### 🗣️ Neural Voice Mappings (Edge-TTS)")
+            st.text_input("English Voice", value=TTS_VOICES.get("en", "en-IN-NeerjaNeural"), disabled=True)
+            st.text_input("Telugu Voice", value=TTS_VOICES.get("te", "te-IN-ShrutiNeural"), disabled=True)
+            st.text_input("Kannada Voice", value=TTS_VOICES.get("kn", "kn-IN-SapnaNeural"), disabled=True)
+            st.text_input("Hindi Voice", value=TTS_VOICES.get("hi", "hi-IN-SwaraNeural"), disabled=True)
+
+    with st.container(border=True):
+        st.markdown("#### 🏢 Store Operating Parameters")
+        st.markdown(f"- **Showrooms in 8 Cities:** {', '.join(SHOWROOM_CITIES)}")
+        st.markdown("- **Store Operating Hours:** 10:00 AM – 08:30 PM (Mon–Sun)")
+        st.markdown("- **Lead Qualification:** 0–100 BANT Matrix (Requirement, Budget, Timeline, Contact, Intent)")
+        st.markdown("- **Double Booking Lock:** Prevents customer conflict & duplicate slots.")

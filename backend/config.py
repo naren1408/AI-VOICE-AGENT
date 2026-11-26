@@ -25,12 +25,13 @@ OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", None)  # Compatible with Groq, De
 MAX_HISTORY_TURNS = 10
 
 # --- TTS NEURAL VOICE MAPPING ---
-# Natural Edge-TTS Microsoft Neural voices for supported languages: English, Telugu, Kannada
+# Natural Edge-TTS Microsoft Neural voices for supported languages: English, Telugu, Kannada, Hindi
 TTS_VOICES = {
     "en": "en-IN-NeerjaNeural",     # Indian English natural female voice
     "en-US": "en-US-JennyNeural",   # US English
     "te": "te-IN-ShrutiNeural",     # Telugu natural female voice
     "kn": "kn-IN-SapnaNeural",      # Kannada natural female voice
+    "hi": "hi-IN-SwaraNeural",      # Hindi natural female voice
     "default": "en-IN-NeerjaNeural"
 }
 

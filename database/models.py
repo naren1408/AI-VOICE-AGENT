@@ -86,16 +86,18 @@ class Appointment(Base):
     id = Column(Integer, primary_key=True, index=True)
     appointment_id = Column(String(32), unique=True, index=True, nullable=True)
     customer_name = Column(String(128), nullable=False)
-    customer_email = Column(String(128), nullable=False)
+    customer_email = Column(String(128), nullable=True)
     customer_phone = Column(String(32), nullable=True)
     appointment_date = Column(String(32), nullable=False)  # YYYY-MM-DD
     appointment_time = Column(String(16), nullable=False)  # HH:MM AM/PM
     appointment_type = Column(String(64), default="Store Visit")
     interested_product = Column(String(128), nullable=True)
     city = Column(String(64), default="Mumbai")
+    location = Column(String(256), nullable=True)  # Store address, meeting link, or callback phone
     status = Column(String(16), default="Confirmed")  # Confirmed, Scheduled, Completed, Cancelled
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
 
 class RecommendedProduct(Base):

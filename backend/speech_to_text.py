@@ -28,11 +28,13 @@ def transcribe_audio_free(audio_path: str) -> Tuple[str, str]:
             audio_data = recognizer.record(source)
 
         text = recognizer.recognize_google(audio_data)
-        # Detect Telugu or Kannada if native script is present
+        # Detect Telugu, Kannada, or Hindi if native script is present
         if any("\u0C00" <= ch <= "\u0C7F" for ch in text):
             lang = "te"
         elif any("\u0C80" <= ch <= "\u0CFF" for ch in text):
             lang = "kn"
+        elif any("\u0900" <= ch <= "\u097F" for ch in text):
+            lang = "hi"
         else:
             lang = "en"
         return text, lang
@@ -64,6 +66,8 @@ def transcribe_audio_ai(audio_path: str, client=None) -> Tuple[str, str]:
                     lang = "te"
                 elif any("\u0C80" <= ch <= "\u0CFF" for ch in text):
                     lang = "kn"
+                elif any("\u0900" <= ch <= "\u097F" for ch in text):
+                    lang = "hi"
                 if text:
                     return text, lang
         except Exception as e:

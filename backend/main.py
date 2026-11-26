@@ -19,7 +19,10 @@ from backend.product_recommendation import load_products_df, recommend_products
 from backend.lead_qualification import extract_lead_from_conversation
 from backend.speech_to_text import transcribe_audio_ai, transcribe_audio_gemini
 from backend.text_to_speech import text_to_speech
-from backend.summarizer import generate_call_summary
+from backend.appointment import (
+    book_appointment_in_db, update_appointment_in_db, cancel_appointment_in_db,
+    get_available_slots, parse_natural_datetime
+)
 from backend.config import COMPANY_NAME, AGENT_NAME, OPENAI_MODEL_CHAT
 
 # Initialize FastAPI application
@@ -58,6 +61,29 @@ class TextTurnRequest(BaseModel):
 
 class CallEndRequest(BaseModel):
     messages: Optional[List[Dict[str, Any]]] = []
+
+
+class ManualBookingRequest(BaseModel):
+    customer_name: str
+    customer_phone: str
+    customer_email: Optional[str] = None
+    date: str  # YYYY-MM-DD
+    time: str  # HH:MM AM/PM
+    appointment_type: Optional[str] = "Store Visit"
+    interested_product: Optional[str] = None
+    city: Optional[str] = "Mumbai"
+    location: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class AppointmentUpdateRequest(BaseModel):
+    date: Optional[str] = None
+    time: Optional[str] = None
+    appointment_type: Optional[str] = None
+    city: Optional[str] = None
+    location: Optional[str] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class WebhookPayload(BaseModel):
@@ -218,16 +244,103 @@ def list_appointments(db: Session = Depends(get_db)):
             "appointment_id": a.appointment_id,
             "customer_name": a.customer_name,
             "customer_email": a.customer_email,
+            "customer_phone": a.customer_phone,
             "date": a.appointment_date,
             "time": a.appointment_time,
             "type": a.appointment_type,
             "product": a.interested_product,
             "city": a.city,
+            "location": a.location,
             "status": a.status,
             "notes": a.notes
         }
         for a in appts
     ]
+
+
+@app.post("/appointments")
+def create_appointment(payload: ManualBookingRequest, db: Session = Depends(get_db)):
+    """Create a manual appointment using common booking service with validation."""
+    try:
+        import datetime
+        date_obj = datetime.datetime.strptime(payload.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Expected YYYY-MM-DD.")
+
+    ok, msg, appt = book_appointment_in_db(
+        db=db,
+        customer_name=payload.customer_name,
+        customer_email=payload.customer_email,
+        customer_phone=payload.customer_phone,
+        date_val=date_obj,
+        time_str=payload.time,
+        appointment_type=payload.appointment_type or "Store Visit",
+        interested_product=payload.interested_product or "Electronics Consultation",
+        city=payload.city or "Mumbai",
+        location=payload.location,
+        notes=payload.notes
+    )
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+
+    return {
+        "status": "success",
+        "message": msg,
+        "appointment_id": appt.appointment_id,
+        "date": appt.appointment_date,
+        "time": appt.appointment_time,
+        "location": appt.location
+    }
+
+
+@app.put("/appointments/{appointment_id}")
+def edit_appointment(appointment_id: str, payload: AppointmentUpdateRequest, db: Session = Depends(get_db)):
+    """Update details of an existing appointment."""
+    import datetime
+    date_obj = None
+    if payload.date:
+        try:
+            date_obj = datetime.datetime.strptime(payload.date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Expected YYYY-MM-DD.")
+
+    ok, msg, appt = update_appointment_in_db(
+        db=db,
+        appointment_id=appointment_id,
+        date_val=date_obj,
+        time_str=payload.time,
+        appointment_type=payload.appointment_type,
+        city=payload.city,
+        location=payload.location,
+        status=payload.status,
+        notes=payload.notes
+    )
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+
+    return {"status": "success", "message": msg}
+
+
+@app.delete("/appointments/{appointment_id}")
+def cancel_appointment(appointment_id: str, db: Session = Depends(get_db)):
+    """Cancel a scheduled appointment."""
+    ok, msg = cancel_appointment_in_db(db, appointment_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail=msg)
+    return {"status": "success", "message": msg}
+
+
+@app.get("/appointments/slots")
+def check_available_slots(date: str, city: Optional[str] = "Mumbai", db: Session = Depends(get_db)):
+    """Check available booking slots for a given date."""
+    try:
+        import datetime
+        date_obj = datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Expected YYYY-MM-DD.")
+
+    slots = get_available_slots(db, date_obj, city)
+    return {"date": date, "city": city, "available_slots": slots}
 
 
 @app.get("/insights")

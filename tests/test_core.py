@@ -297,3 +297,137 @@ def test_conversational_edge_cases():
     assert "delighted to schedule a hands-on showroom appointment" in r8["reply"]
     assert "Category: Appointment" not in r8["reply"]
 
+
+def test_accurate_product_rag_questions():
+    """Verify accurate direct product questions for brand, competitor, RAM, processor, price, warranty."""
+    from backend.ai_agent import execute_sales_turn
+
+    # 1. Laptop brands available
+    r1 = execute_sales_turn("TEST-BRAND-LAPTOP", "what brand laptops are availbe")
+    assert "NovaCorp" in r1["reply"] and "Zenith" in r1["reply"] and "VoltTech" in r1["reply"]
+    assert "Based on your requirements, here are our top catalog recommendations" not in r1["reply"]
+
+    # 2. Competitor HP question
+    r2 = execute_sales_turn("TEST-HP", "do you have HP laptops?")
+    assert "We do not stock HP" in r2["reply"]
+    assert "CodeMaster Pro 15" in r2["reply"]
+
+    # 3. RAM question
+    r3 = execute_sales_turn("TEST-RAM", "what is the RAM of CodeMaster Pro 15?")
+    assert "16GB DDR5" in r3["reply"]
+
+    # 4. Processor question
+    r4 = execute_sales_turn("TEST-CPU", "which processor does CyberPulse G15 have?")
+    assert "AMD Ryzen 7 7840HS" in r4["reply"]
+
+    # 5. Hindi greeting
+    r5 = execute_sales_turn("TEST-HI", "नमस्ते, मुझे गेमिंग फोन देखना है")
+    assert "नमस्ते" in r5["reply"]
+    assert r5["language"] == "hi"
+
+
+def test_voice_appointment_multistep_flow():
+    """Verify conversational 5-step appointment booking flow."""
+    from backend.ai_agent import execute_sales_turn
+
+    db = SessionLocal()
+    try:
+        db.query(Appointment).filter(Appointment.customer_phone == "9876543999").delete()
+        db.commit()
+    finally:
+        db.close()
+
+    call_id = "TEST-FLOW-CALL-UNIQUE"
+    booking_state = {}
+
+    # Step 1: Customer requests an appointment
+    t1 = execute_sales_turn(call_id, "I want to book an appointment.", booking_state=booking_state)
+    assert "fill in your basic details first" in t1["reply"]
+    assert booking_state.get("step") == "collect_details"
+    assert t1["booking"] is None
+
+    # Step 2: Customer provides name and phone
+    t2 = execute_sales_turn(call_id, "My name is Priya Patel and my phone number is 9876543999. I am interested in CodeMaster Pro 15", booking_state=booking_state)
+    assert "What date and time would you prefer" in t2["reply"]
+    assert booking_state.get("step") == "ask_time"
+    assert t2["booking"] is None
+
+    # Step 3: Customer provides date and time
+    t3 = execute_sales_turn(call_id, "Tomorrow at 4:00 PM", booking_state=booking_state)
+    assert "Where would you like to have the appointment" in t3["reply"]
+    assert booking_state.get("step") == "ask_location"
+    assert t3["booking"] is None
+
+    # Step 4: Customer selects location/method
+    t4 = execute_sales_turn(call_id, "Store visit in Mumbai showroom", booking_state=booking_state)
+    assert "Let me confirm your appointment" in t4["reply"]
+    assert "Is everything correct" in t4["reply"]
+    assert booking_state.get("step") == "confirm"
+    assert t4["booking"] is None
+
+    # Step 5: Customer confirms
+    t5 = execute_sales_turn(call_id, "Yes, everything is correct!", booking_state=booking_state)
+    assert "successfully booked" in t5["reply"]
+    assert booking_state.get("step") == "booked"
+    assert t5["booking"] is not None
+    assert t5["booking"]["status"] == "success"
+    assert t5["ics_content"] is not None
+
+
+def test_manual_appointment_booking_and_crud():
+    """Verify manual booking validation, slot availability, updating, and cancelling."""
+    from backend.appointment import (
+        book_appointment_in_db, update_appointment_in_db,
+        cancel_appointment_in_db, get_available_slots, validate_appointment_slot
+    )
+
+    db = SessionLocal()
+    try:
+        today = datetime.date.today()
+        past_date = today - datetime.timedelta(days=2)
+        future_date = today + datetime.timedelta(days=7)
+
+        # 1. Past date rejection
+        valid, reason = validate_appointment_slot(past_date, "04:00 PM")
+        assert not valid
+        assert "past dates" in reason
+
+        # 2. Available slots check
+        slots = get_available_slots(db, future_date, "Bengaluru")
+        assert len(slots) > 0
+        assert "04:00 PM" in slots
+
+        # 3. Successful booking
+        ok, msg, appt = book_appointment_in_db(
+            db=db,
+            customer_name="Rohan Verma",
+            customer_email="rohan.verma@example.com",
+            customer_phone="9988776655",
+            date_val=future_date,
+            time_str="04:00 PM",
+            appointment_type="Store Visit",
+            city="Bengaluru"
+        )
+        assert ok
+        assert appt is not None
+        appt_id = appt.appointment_id
+
+        # 4. Edit appointment
+        ok_up, msg_up, appt_up = update_appointment_in_db(
+            db=db,
+            appointment_id=appt_id,
+            time_str="05:30 PM",
+            notes="Customer requested time change"
+        )
+        assert ok_up
+        assert appt_up.appointment_time == "05:30 PM"
+        assert appt_up.notes == "Customer requested time change"
+
+        # 5. Cancel appointment
+        ok_can, msg_can = cancel_appointment_in_db(db, appt_id)
+        assert ok_can
+        assert "cancelled" in msg_can.lower()
+    finally:
+        db.close()
+
+

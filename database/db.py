@@ -31,7 +31,22 @@ def get_db():
 def init_db():
     """Create all tables in the SQLite database and seed initial synthetic records."""
     import database.models  # ensure models are registered
+    from sqlalchemy import text
     Base.metadata.create_all(bind=engine)
+
+    # SQLite schema migration for added columns
+    with engine.connect() as conn:
+        try:
+            res = conn.execute(text("PRAGMA table_info(appointments)")).fetchall()
+            col_names = [r[1] for r in res]
+            if "location" not in col_names:
+                conn.execute(text("ALTER TABLE appointments ADD COLUMN location VARCHAR(256)"))
+            if "updated_at" not in col_names:
+                conn.execute(text("ALTER TABLE appointments ADD COLUMN updated_at DATETIME"))
+            conn.commit()
+        except Exception as e:
+            pass
+
     seed_initial_data()
 
 
