@@ -18,9 +18,10 @@ AGENT_ROLE_DESCRIPTION = (
 )
 
 # --- AI & MODEL CONFIGURATION ---
-# Central location to change model name during live interview demo
-GEMINI_MODEL_CHAT = "gemini-2.5-flash"
-GEMINI_MODEL_EMBEDDING = "text-embedding-004"
+# Central location to change model name or endpoint during live interview demo
+OPENAI_MODEL_CHAT = os.getenv("OPENAI_MODEL_CHAT", "gpt-4o-mini")
+OPENAI_MODEL_STT = os.getenv("OPENAI_MODEL_STT", "whisper-1")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", None)  # Compatible with Groq, DeepSeek, Ollama, OpenRouter
 MAX_HISTORY_TURNS = 10
 
 # --- TTS NEURAL VOICE MAPPING ---

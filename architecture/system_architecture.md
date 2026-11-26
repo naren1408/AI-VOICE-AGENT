@@ -15,13 +15,13 @@ flowchart TD
     end
 
     subgraph VoicePipeline["Voice & Language Processing"]
-        STT["🎤 Dual-Engine STT\n(Gemini Live STT / SpeechRecognition)"]
+        STT["🎤 Dual-Engine STT\n(OpenAI Whisper / Free SpeechRecognition)"]
         TTS["🗣️ Text-to-Speech\n(Edge-TTS: Neerja, Shruti, Sapna)"]
     end
 
     subgraph CoreAgent["AI Sales Agent Engine"]
         Agent["🤖 Sales Agent Orchestrator (Anya)\nContext & 10-Turn Memory"]
-        LLM["🧠 LLM Engine\n(Gemini 2.5 Flash / Demo Mode Rule Engine)"]
+        LLM["🧠 LLM Engine\n(OpenAI GPT-4o-mini / Demo Mode Rule Engine)"]
         RAG["📚 TF-IDF RAG Engine\n(Cosine Similarity on ElectroMart KB)"]
         Sentiment["📊 Sentiment Analyzer\n(Score: -1.0 to +1.0 & Escalation)"]
         LeadScoring["🎯 Lead Qualification Engine\n(BANT Scoring 0-100 & Hot/Warm/Cold)"]
@@ -84,13 +84,13 @@ flowchart TD
 
 1. **User Input:** Customer speaks into the browser microphone or types in chat (English, Telugu, Kannada).
 2. **Audio Capture:** Streamlit captures `.wav` audio binary from `st.audio_input`.
-3. **STT Transcription:** `backend/speech_to_text.py` converts speech to text via Gemini STT or Free SpeechRecognition.
+3. **STT Transcription:** `backend/speech_to_text.py` converts speech to text via OpenAI Whisper API or Free SpeechRecognition.
 4. **API Transmission:** Streamlit transmits user query to FastAPI `/chat` or invokes `execute_sales_turn()`.
 5. **Context Retrieval (RAG):** `backend/rag.py` runs TF-IDF vectorization and retrieves top-3 matching chunks from the 8 ElectroMart knowledge base files.
 6. **Sentiment Analysis:** `backend/sentiment.py` evaluates turn sentiment (-1.0 to 1.0) and detects escalation flags.
 7. **Lead Extraction:** `backend/lead_qualification.py` extracts validated entities (Name, Email, Phone, City, Category, Budget, Timeline).
 8. **Lead Qualification:** Computes 0-100 BANT score and classifies lead status (`HOT`, `WARM`, `COLD`).
-9. **Agent Reasoning:** LLM (Gemini 2.5 Flash if key present, else intelligent Demo Mode) generates contextual electronics consultation reply.
+9. **Agent Reasoning:** LLM (OpenAI GPT-4o-mini if key present, else intelligent Demo Mode) generates contextual electronics consultation reply.
 10. **Appointment Detection:** If the customer asks to visit the showroom, `backend/appointment.py` checks business hours (10 AM - 8:30 PM), prevents duplicate bookings, and generates an `.ics` calendar file.
 11. **TTS Synthesis:** `backend/text_to_speech.py` invokes Edge-TTS to produce natural speech in English (`Neerja`), Telugu (`Shruti`), or Kannada (`Sapna`).
 12. **Database Persistence:** Messages, call sessions, lead attributes, and catalog recommendations are committed to SQLite (`electromart.db`).

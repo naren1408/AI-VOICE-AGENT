@@ -14,13 +14,13 @@ from sqlalchemy.orm import Session
 
 from database.db import get_db, init_db
 from database.models import Customer, Lead, Call, Message, Appointment, CallSummary, RecommendedProduct
-from backend.ai_agent import execute_sales_turn, is_demo_mode, get_gemini_client
+from backend.ai_agent import execute_sales_turn, is_demo_mode, get_ai_client, get_gemini_client
 from backend.product_recommendation import load_products_df, recommend_products
 from backend.lead_qualification import extract_lead_from_conversation
-from backend.speech_to_text import transcribe_audio_gemini
+from backend.speech_to_text import transcribe_audio_ai, transcribe_audio_gemini
 from backend.text_to_speech import text_to_speech
 from backend.summarizer import generate_call_summary
-from backend.config import COMPANY_NAME, AGENT_NAME
+from backend.config import COMPANY_NAME, AGENT_NAME, OPENAI_MODEL_CHAT
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -73,7 +73,7 @@ def health_check():
         "status": "healthy",
         "company": COMPANY_NAME,
         "agent": AGENT_NAME,
-        "mode": "Demo Mode" if is_demo_mode() else "Gemini 2.5 Flash",
+        "mode": "Demo Mode" if is_demo_mode() else f"OpenAI ({OPENAI_MODEL_CHAT})",
         "timestamp": time.time()
     }
 
@@ -86,7 +86,7 @@ def start_call(db: Session = Depends(get_db)):
     db.add(new_call)
     db.commit()
 
-    mode_label = "Demo Mode" if is_demo_mode() else "Gemini 2.5 Flash"
+    mode_label = "Demo Mode" if is_demo_mode() else f"OpenAI ({OPENAI_MODEL_CHAT})"
     return CallStartResponse(
         call_id=call_id,
         message=f"Welcome to {COMPANY_NAME}! Session {call_id} initialized in {mode_label}.",
@@ -117,8 +117,8 @@ async def handle_audio_turn(call_id: str, audio: UploadFile = File(...)):
     with open(temp_audio_in, "wb") as f:
         f.write(content)
 
-    client = get_gemini_client()
-    user_transcript, detected_lang = transcribe_audio_gemini(temp_audio_in, client)
+    client = get_ai_client()
+    user_transcript, detected_lang = transcribe_audio_ai(temp_audio_in, client)
     if not user_transcript or user_transcript.startswith("Audio transcription error"):
         user_transcript = "What are your top laptop recommendations?"
 

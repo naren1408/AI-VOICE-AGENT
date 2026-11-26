@@ -40,15 +40,15 @@ def draw_architecture():
 
     # 1. Client Layer (Top)
     draw_box(1.0, 6.7, 3.4, 0.95, "🖥️ Streamlit Frontend UI", "3 Tabs • Live Chat • CRM • BI Insights", "#EFF6FF", "#2563EB")
-    draw_box(5.3, 6.7, 3.4, 0.95, "🎙️ Speech-to-Text (STT)", "Gemini 2.5 Flash / Demo Transcription", "#F0FDF4", "#16A34A")
-    draw_box(9.6, 6.7, 3.4, 0.95, "🗣️ Text-to-Speech (TTS)", "Edge-TTS (en-IN / hi-IN / en-US)", "#FAF5FF", "#9333EA")
+    draw_box(5.3, 6.7, 3.4, 0.95, "🎙️ Speech-to-Text (STT)", "OpenAI Whisper / Free Web Speech", "#F0FDF4", "#16A34A")
+    draw_box(9.6, 6.7, 3.4, 0.95, "🗣️ Text-to-Speech (TTS)", "Edge-TTS (en-IN / te-IN / kn-IN)", "#FAF5FF", "#9333EA")
 
     # 2. API Gateway & Controller Layer (Middle-Top)
     draw_box(4.5, 5.1, 5.0, 1.0, "⚡ FastAPI REST API Gateway", "Endpoints: /call/text, /call/audio, /products, /leads, /appointments", "#FEF3C7", "#D97706")
 
     # 3. Core AI & Reasoning Layer (Middle)
     draw_box(0.8, 3.1, 3.6, 1.25, "📚 TF-IDF & NumPy RAG", "8 Knowledge Base Docs\nCosine Relevance Retrieval", "#F8FAFC", "#64748B")
-    draw_box(5.2, 3.1, 3.6, 1.25, "🤖 AI Sales Agent (Anya)", "Gemini 2.5 Flash LLM\n+ Context & 10-Turn Memory", "#EFF6FF", "#2563EB")
+    draw_box(5.2, 3.1, 3.6, 1.25, "🤖 AI Sales Agent (Anya)", "OpenAI GPT-4o-mini / Demo\n+ Context & 10-Turn Memory", "#EFF6FF", "#2563EB")
     draw_box(9.6, 3.1, 3.6, 1.25, "🎯 Recommendation Engine", "data/products.csv Source of Truth\nBudget & Spec Matching", "#F0FDF4", "#16A34A")
 
     # 4. Analytics & Validation Engines (Middle-Bottom)

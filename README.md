@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.32%2B-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-Gemini_2.5_Flash-4285F4.svg?logo=google&logoColor=white)](https://ai.google.dev/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991.svg?logo=openai&logoColor=white)](https://openai.com/)
 [![Edge-TTS](https://img.shields.io/badge/Edge--TTS-Neural_Voices-0078D7.svg)](https://github.com/rany2/edge-tts)
 [![SQLite](https://img.shields.io/badge/Database-SQLite_SQLAlchemy-003B57.svg?logo=sqlite&logoColor=white)](https://sqlite.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -24,20 +24,20 @@ An autonomous, multilingual B2B/B2C Electronics Retail Sales Voice Agent built f
          │
     ┌────┴───────────────────────────┐
     ▼                                ▼
-[Gemini STT]                 [TF-IDF & NumPy RAG Engine]
-(gemini-2.5-flash / Demo)    (8 Knowledge Base Docs + Cosine Sim)
+[OpenAI Whisper STT]          [TF-IDF & NumPy RAG Engine]
+(whisper-1 / Free STT)        (8 Knowledge Base Docs + Cosine Sim)
     │                                │
     └──────────────┬─────────────────┘
                    ▼
        [Anya: AI Sales Agent] ──▶ [Deterministic Product Recommender]
-       (Gemini 2.5 Flash / Demo)   (data/products.csv Source of Truth)
+       (OpenAI GPT-4o-mini / Demo) (data/products.csv Source of Truth)
                    │          ──▶ [BANT Lead Scoring (0-100)]
                    │          ──▶ [Regex Sentiment Engine (-1 to 1)]
                    │
     ┌──────────────┴─────────────────┐
     ▼                                ▼
 [Edge-TTS Neural Audio]      [Transactional Booking & CRM]
-(en-IN / hi-IN / en-US)      (SQLite electromart.db + .ICS file)
+(en-IN / te-IN / kn-IN)      (SQLite electromart.db + .ICS file)
 ```
 
 ---
@@ -47,7 +47,7 @@ An autonomous, multilingual B2B/B2C Electronics Retail Sales Voice Agent built f
 | Feature | Category | Implementation Details |
 | :--- | :--- | :--- |
 | **Multilingual Voice & Text Chat** | **Working** | Streamlit chat UI + Edge-TTS neural speech in Indian English (`en-IN-NeerjaNeural`), Telugu (`te-IN-ShrutiNeural`), and Kannada (`kn-IN-SapnaNeural`). |
-| **STT Voice Transcription** | **Working** (Gemini) / **Demo Mode** | Uses `gemini-2.5-flash` via `google-genai` SDK; graceful offline text input fallback in Demo Mode. |
+| **STT Voice Transcription** | **Working** (OpenAI Whisper) / **Demo Mode** | Uses `whisper-1` via `openai` SDK or free local speech recognition; graceful offline text input fallback in Demo Mode. |
 | **Catalog Recommendation Engine**| **Working** | Budget & spec filtering over `data/products.csv`. Does not hallucinate non-existent products. |
 | **Company RAG Retrieval** | **Working** | Cosine similarity over 8 `knowledge_base/*.txt` documents using TF-IDF and NumPy. |
 | **BANT Lead Qualification** | **Working** | Objective 0–100 scoring (Requirement: 20, Budget: 20, Timeline: 25, Contact: 15, Intent: 20) with HOT/WARM/COLD status. |
@@ -84,11 +84,12 @@ Create a `.env` file from the provided example:
 ```powershell
 cp .env.example .env
 ```
-- **To run in Gemini AI Mode**: Add your Gemini key to `.env`:
+- **To run in OpenAI AI Mode**: Add your OpenAI key to `.env` (compatible with Groq/DeepSeek/Ollama):
   ```ini
-  GEMINI_API_KEY=your_gemini_api_key_here
+  OPENAI_API_KEY=your_openai_api_key_here
+  OPENAI_MODEL_CHAT=gpt-4o-mini
   ```
-- **To run in Demo Mode (Zero Key Required)**: Leave `GEMINI_API_KEY` empty. The application runs offline with full sales intelligence.
+- **To run in Demo Mode (Zero Key Required)**: Leave `OPENAI_API_KEY` empty. The application runs offline with full sales intelligence.
 
 ---
 
@@ -138,7 +139,7 @@ Follow the complete script in [`demo_script.md`](file:///f:/AI%20VOICE%20AGENT/d
 
 | What to Modify Live | File to Open | Variable or Section |
 | :--- | :--- | :--- |
-| **Gemini Chat Model** | [`backend/config.py`](file:///f:/AI%20VOICE%20AGENT/backend/config.py) | `GEMINI_MODEL_CHAT = "gemini-2.5-flash"` |
+| **OpenAI Chat Model** | [`backend/config.py`](file:///f:/AI%20VOICE%20AGENT/backend/config.py) | `OPENAI_MODEL_CHAT = "gpt-4o-mini"` |
 | **TTS Neural Voice** | [`backend/config.py`](file:///f:/AI%20VOICE%20AGENT/backend/config.py) | `TTS_VOICES["en"] = "en-IN-NeerjaNeural"` |
 | **Lead Scoring Weights**| [`backend/lead_qualification.py`](file:///f:/AI%20VOICE%20AGENT/backend/lead_qualification.py) | `LEAD_SCORING_WEIGHTS = {...}` |
 | **Recommendation Filter**| [`backend/product_recommendation.py`](file:///f:/AI%20VOICE%20AGENT/backend/product_recommendation.py) | `recommend_products(...)` scoring rules |
@@ -152,7 +153,7 @@ Follow the complete script in [`demo_script.md`](file:///f:/AI%20VOICE%20AGENT/d
 AI-Sales-Voice-Agent/
 ├── app.py                      # Streamlit UI (3 Tabs: Live Call, Products & CRM, BI Insights)
 ├── requirements.txt            # Pinned dependencies
-├── .env                        # Environment variables (GEMINI_API_KEY)
+├── .env                        # Environment variables (OPENAI_API_KEY)
 ├── .env.example
 ├── .gitignore
 ├── .streamlit/config.toml      # Polished light theme styling
@@ -168,7 +169,7 @@ AI-Sales-Voice-Agent/
 │   ├── lead_qualification.py   # BANT 0-100 scoring & Pydantic models
 │   ├── sentiment.py            # Word-boundary sentiment engine (-1 to 1)
 │   ├── appointment.py          # Operating hours check, conflict lock & .ics generator
-│   ├── speech_to_text.py       # Gemini STT via google-genai SDK
+│   ├── speech_to_text.py       # OpenAI Whisper / Free STT
 │   ├── text_to_speech.py       # Edge-TTS multi-voice synthesis
 │   └── summarizer.py           # Structured executive call summary generator
 │

@@ -1,6 +1,6 @@
 """
 ElectroMart India — AI Sales Voice Agent Orchestrator
-Coordinates RAG context retrieval, catalog product recommendations, Gemini LLM reasoning
+Coordinates RAG context retrieval, catalog product recommendations, OpenAI LLM reasoning
 (with comprehensive rule-based Demo Mode fallback), BANT lead scoring, sentiment tracking, and booking.
 """
 import os
@@ -10,7 +10,7 @@ from typing import List, Dict, Optional, Tuple
 from dotenv import load_dotenv
 
 from backend.config import (
-    COMPANY_NAME, AGENT_NAME, GEMINI_MODEL_CHAT,
+    COMPANY_NAME, AGENT_NAME, OPENAI_MODEL_CHAT, OPENAI_BASE_URL,
     MAX_HISTORY_TURNS, AGENT_ROLE_DESCRIPTION
 )
 from backend.rag import rag_engine
@@ -146,22 +146,27 @@ DEMO_REPLIES = {
 }
 
 
-def get_gemini_client():
-    """Return google-genai client if GEMINI_API_KEY is present in environment, else None."""
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+def get_ai_client():
+    """Return OpenAI client if OPENAI_API_KEY is present in environment, else None."""
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
     if not api_key:
         return None
     try:
-        from google import genai
-        return genai.Client(api_key=api_key)
+        from openai import OpenAI
+        base_url = os.getenv("OPENAI_BASE_URL", None)
+        return OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
     except Exception as e:
-        print(f"Gemini client init notice: {e}")
+        print(f"OpenAI client init notice: {e}")
         return None
 
 
+# Backward-compatible alias
+get_gemini_client = get_ai_client
+
+
 def is_demo_mode() -> bool:
-    """True when no Gemini API key is configured."""
-    return get_gemini_client() is None
+    """True when no OpenAI API key is configured."""
+    return get_ai_client() is None
 
 
 def _clean_rag_chunk_for_speech(chunk: str) -> str:
@@ -404,15 +409,14 @@ def execute_sales_turn(
         all_text = " ".join([h.get("content", "") for h in history]) + " " + user_input
         extracted_lead: ExtractedLead = extract_lead_from_conversation(all_text)
 
-        # 5. Generate Response (Gemini or Demo Mode)
-        client = get_gemini_client()
+        # 5. Generate Response (OpenAI or Demo Mode)
+        client = get_ai_client()
         agent_reply = ""
         mode = "Demo Mode"
 
         if client:
             try:
-                from google.genai import types
-                prompt_messages = f"""
+                system_content = f"""
 {ELECTROMART_SYSTEM_PROMPT}
 
 KNOWLEDGE BASE CONTEXT:
@@ -420,22 +424,23 @@ KNOWLEDGE BASE CONTEXT:
 
 CATALOG RECOMMENDATIONS:
 {format_recommendations_for_agent(recs)}
-
-CONVERSATION HISTORY:
-"""
+""".strip()
+                messages = [{"role": "system", "content": system_content}]
                 for h in history[-MAX_HISTORY_TURNS:]:
-                    prompt_messages += f"{h.get('role', 'user').upper()}: {h.get('content', '')}\n"
+                    role = "assistant" if h.get("role") in ["assistant", "agent"] else "user"
+                    messages.append({"role": role, "content": h.get("content", "")})
 
-                prompt_messages += f"USER: {user_input}\nAGENT:"
+                messages.append({"role": "user", "content": user_input})
 
-                res = client.models.generate_content(
-                    model=GEMINI_MODEL_CHAT,
-                    contents=prompt_messages
+                completion = client.chat.completions.create(
+                    model=OPENAI_MODEL_CHAT,
+                    messages=messages,
+                    temperature=0.3
                 )
-                agent_reply = res.text.strip()
-                mode = "Gemini 2.5 Flash"
+                agent_reply = completion.choices[0].message.content.strip()
+                mode = f"OpenAI ({OPENAI_MODEL_CHAT})"
             except Exception as e:
-                print(f"Gemini API error, using demo fallback: {e}")
+                print(f"OpenAI API error, using demo fallback: {e}")
                 agent_reply = _generate_demo_reply(user_input, recs, rag_context)
                 mode = f"Demo Mode (API error: {str(e)[:40]})"
         else:

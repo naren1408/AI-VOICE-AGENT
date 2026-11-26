@@ -17,7 +17,7 @@ In the multi-brand electronics retail sector, brick-and-mortar and omnichannel r
 The system utilizes a clean, decoupled full-stack architecture:
 - **Presentation Layer:** Streamlit enterprise dashboard (`app.py`) built with a light, clean SaaS aesthetic featuring 3 operational tabs: Live Sales Call, Products & CRM Pipeline, and Sales BI Insights.
 - **REST API Gateway:** FastAPI service (`backend/main.py`) exposing standardized endpoints (`/call/start`, `/call/{id}/text`, `/call/{id}/audio`, `/call/{id}/end`, `/products`, `/leads`, `/appointments`, `/insights`).
-- **Intelligence & RAG Engine:** Multi-document TF-IDF vectorizer coupled with NumPy cosine similarity (`backend/rag.py`), ingesting 8 domain documents (company profile, catalog, pricing, policies, recommendation guides, FAQs, and comparisons). Optionally leverages Gemini 2.5 Flash via `google-genai` SDK.
+- **Intelligence & RAG Engine:** Multi-document TF-IDF vectorizer coupled with NumPy cosine similarity (`backend/rag.py`), ingesting 8 domain documents (company profile, catalog, pricing, policies, recommendation guides, FAQs, and comparisons). Optionally leverages OpenAI GPT-4o-mini & Whisper via `openai` SDK.
 - **Deterministic Recommendation Engine:** Source-of-truth matching logic (`backend/product_recommendation.py`) that strictly filters and scores catalog products without hallucination.
 - **Persistence Layer:** SQLite with SQLAlchemy ORM (`database/db.py`), auto-seeded with 25 products, 20 customers, 15 leads, and 10 appointments.
 

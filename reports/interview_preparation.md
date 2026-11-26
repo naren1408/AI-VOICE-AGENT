@@ -10,16 +10,16 @@ This guide enables you to explain every file and function in under 60 seconds an
 | :--- | :--- | :--- |
 | `app.py` | **Streamlit SaaS Dashboard:** Clean 3-tab layout (Live Sales Call, Products & CRM, BI Insights). Manages conversation session state, microphone audio capture, live BANT score card, and `.ics` download. | `tab1, tab2, tab3 = st.tabs(...)`, `execute_sales_turn(...)` |
 | `backend/main.py` | **FastAPI REST API:** Exposes production endpoints for `/health`, `/call/start`, `/call/{id}/text`, `/call/{id}/audio`, `/products`, `/leads`, `/appointments`, and `/insights`. Uses Pydantic schemas and CORS middleware. | `handle_text_turn(...)`, `handle_audio_turn(...)` |
-| `backend/config.py` | **Central Configuration:** Houses business constants, agent identity, Edge-TTS voice mapping, and Gemini model names in one spot for live changes during the interview. | `GEMINI_MODEL_CHAT = "gemini-2.5-flash"`, `TTS_VOICES` |
+| `backend/config.py` | **Central Configuration:** Houses business constants, agent identity, Edge-TTS voice mapping, and OpenAI/LLM model names in one spot for live changes during the interview. | `OPENAI_MODEL_CHAT = "gpt-4o-mini"`, `TTS_VOICES` |
 | `backend/product_recommendation.py` | **Deterministic Recommendation Engine:** Parses budget (e.g. 70k, 1 lakh) and intent (coding, student, gaming) from natural language; scores and filters catalog records from `products.csv`. Never allows LLM hallucination. | `recommend_products(...)`, `parse_budget_from_text(...)` |
 | `backend/rag.py` | **TF-IDF & NumPy RAG Engine:** Ingests all 8 knowledge base text files, chunks paragraphs, and performs cosine similarity vector search using NumPy. Runs 100% offline with zero external model downloads. | `ElectroMartRAG.retrieve(...)`, `get_context(...)` |
 | `backend/lead_qualification.py` | **BANT Lead Scoring:** Extracts requirement, budget, timeline, contact, and intent using regex. Calculates 0–100 score based on 5 weighted criteria and classifies into HOT, WARM, or COLD. | `LEAD_SCORING_WEIGHTS`, `extract_lead_from_conversation(...)` |
 | `backend/sentiment.py` | **Word-Boundary Sentiment Engine:** Evaluates customer sentiment (-1.0 to 1.0). Uses regex word boundaries (`\b`) to eliminate false-negative triggers from sub-words. Detects human supervisor escalation flags. | `analyze_sentiment(...)`, `should_escalate(...)` |
 | `backend/appointment.py` | **Appointment Engine:** Validates showroom operating hours (10 AM to 8:30 PM), prevents duplicate customer bookings using database queries, and formats RFC 5545 `.ics` calendar content. | `book_appointment_in_db(...)`, `validate_appointment_slot(...)` |
-| `backend/speech_to_text.py` | **Speech-to-Text Module:** Interacts with Google Gemini API via `google-genai` SDK to transcribe inbound audio and detect spoken language (English/Telugu/Kannada). | `transcribe_audio_gemini(...)` |
+| `backend/speech_to_text.py` | **Speech-to-Text Module:** Interacts with OpenAI Whisper API or Free SpeechRecognition to transcribe inbound audio and detect spoken language (English/Telugu/Kannada). | `transcribe_audio_ai(...)` |
 | `backend/text_to_speech.py` | **Text-to-Speech Module:** Generates spoken audio using Microsoft Edge Neural voices (`en-IN-NeerjaNeural`, `hi-IN-SwaraNeural`). Generates unique file paths to eliminate Windows file-locking conflicts. | `text_to_speech(...)`, `_synthesize_async(...)` |
 | `backend/summarizer.py` | **Call Summarizer:** Aggregates customer requirements, category, budget, objections, lead score, and generates structured executive summary records in SQLite. | `generate_call_summary(...)` |
-| `backend/ai_agent.py` | **Agent Orchestrator:** Connects RAG, product recommendation, Gemini LLM (or rule-based Demo Mode), lead qualification, and database persistence into an end-to-end sales turn. | `execute_sales_turn(...)`, `DEMO_REPLIES` |
+| `backend/ai_agent.py` | **Agent Orchestrator:** Connects RAG, product recommendation, OpenAI LLM (or rule-based Demo Mode), lead qualification, and database persistence into an end-to-end sales turn. | `execute_sales_turn(...)`, `DEMO_REPLIES` |
 | `database/models.py` | **SQLAlchemy ORM Models:** Defines relational schema for `Customer`, `Lead`, `Call`, `Message`, `Appointment`, `RecommendedProduct`, and `CallSummary`. | `class Lead(Base)`, `class Appointment(Base)` |
 | `database/db.py` | **Database Session & Auto-Seeder:** Connects to SQLite (`electromart.db`). Checks on startup if tables are empty and automatically populates synthetic records from `data/*.csv`. | `init_db()`, `seed_initial_data()` |
 
@@ -27,8 +27,8 @@ This guide enables you to explain every file and function in under 60 seconds an
 
 ## 🎯 20 Technical Interview Questions & Expert Answers
 
-### 1. Why did you choose a dual-mode (Demo Mode vs. Gemini API) architecture?
-**Answer:** In production and technical hiring challenges, external API keys can expire, hit rate limits, or run out of quota. By designing a deterministic Demo Mode that leverages TF-IDF and regex scoring, the application is 100% demo-ready out of the box with zero paid API keys, while dynamically activating Gemini 2.5 Flash when `GEMINI_API_KEY` is provided.
+### 1. Why did you choose a dual-mode (Demo Mode vs. OpenAI API) architecture?
+**Answer:** In production and technical hiring challenges, external API keys can expire, hit rate limits, or run out of quota. By designing a deterministic Demo Mode that leverages TF-IDF and regex scoring, the application is 100% demo-ready out of the box with zero paid API keys, while dynamically activating OpenAI (GPT-4o-mini / Whisper) when `OPENAI_API_KEY` is provided.
 
 ### 2. How did you prevent the LLM from hallucinating product specifications and prices?
 **Answer:** I separated factual product retrieval from conversational generation. The recommendation engine (`backend/product_recommendation.py`) acts as the single source of truth, filtering and scoring verified rows directly from `products.csv`. The retrieved products and their exact prices are injected into the LLM system prompt as immutable constraints.
@@ -97,5 +97,5 @@ Leads scoring 70–100 are HOT, 40–69 WARM, and 0–39 COLD.
 ### 20. How can you demonstrate live changes during an interview?
 **Answer:** All live variables are consolidated in single dictionaries:
 - Change scoring weights in `backend/lead_qualification.py` (`LEAD_SCORING_WEIGHTS`).
-- Change model or voices in `backend/config.py` (`GEMINI_MODEL_CHAT`, `TTS_VOICES`).
+- Change model or voices in `backend/config.py` (`OPENAI_MODEL_CHAT`, `TTS_VOICES`).
 - Change agent personality in `backend/ai_agent.py` (`ELECTROMART_SYSTEM_PROMPT`).

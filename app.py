@@ -12,8 +12,8 @@ import plotly.express as px
 
 from database.db import init_db, SessionLocal
 from database.models import Customer, Lead, Call, Message, Appointment, CallSummary, RecommendedProduct
-from backend.config import COMPANY_NAME, AGENT_NAME, AGENT_TITLE
-from backend.ai_agent import execute_sales_turn, is_demo_mode
+from backend.config import COMPANY_NAME, AGENT_NAME, AGENT_TITLE, OPENAI_MODEL_CHAT
+from backend.ai_agent import execute_sales_turn, is_demo_mode, get_ai_client
 from backend.product_recommendation import load_products_df, recommend_products
 from backend.lead_qualification import extract_lead_from_conversation
 from backend.appointment import parse_natural_datetime, book_appointment_in_db, generate_ics_content
@@ -98,7 +98,7 @@ with col_h1:
     st.markdown(f"## ⚡ {COMPANY_NAME} — AI Sales Voice Agent")
     st.caption(f"Autonomous Electronics Retail & Product Consultation • Powered by {AGENT_NAME} ({AGENT_TITLE})")
 with col_h2:
-    mode_text = "⚡ Demo Mode (Zero API Key)" if is_demo_mode() else "🟢 Gemini 2.5 Flash Mode"
+    mode_text = "⚡ Demo Mode (Zero API Key)" if is_demo_mode() else f"🟢 OpenAI ({OPENAI_MODEL_CHAT}) Mode"
     st.markdown(f"**Status:** `{mode_text}`")
     st.caption(f"Session ID: `{st.session_state.call_id}`")
 
@@ -220,13 +220,13 @@ with tab1:
                 if audio_bytes and len(audio_bytes) > 100 and audio_hash != st.session_state.get("last_audio_hash"):
                     st.session_state["last_audio_hash"] = audio_hash
                     st.session_state["mic_idx"] = st.session_state.get("mic_idx", 0) + 1
-                    from backend.speech_to_text import transcribe_audio_gemini
-                    from backend.ai_agent import get_gemini_client
+                    from backend.speech_to_text import transcribe_audio_ai
+                    from backend.ai_agent import get_ai_client
                     temp_wav = f"temp_in_{st.session_state.call_id}.wav"
                     with open(temp_wav, "wb") as f:
                         f.write(audio_bytes)
                     with st.spinner("🔄 Transcribing your voice..."):
-                        t_text, _ = transcribe_audio_gemini(temp_wav, get_gemini_client())
+                        t_text, _ = transcribe_audio_ai(temp_wav, get_ai_client())
                     if t_text and not t_text.startswith("Audio transcription error"):
                         user_text = t_text
                     else:
